@@ -1,0 +1,13 @@
+# X-Ray Analyzer desktop app (tested with Python 3.12)
+pywebview==6.2.1          # on Windows this also installs pythonnet (needed for the Edge WebView2 window)
+onnxruntime==1.31.1       # for a GPU option on Windows: replace with onnxruntime-directml
+numpy==2.5.4
+scikit-image==0.26.0      # the exact resize the model was trained with
+pydicom==3.0.2
+pillow==13.0.0
+
+# build only (makes the .exe)
+pyinstaller==6.22.3
+
+# Linux only, for running tests/test_ui.py without a screen:
+#   pip install PyQt6 PyQt6-WebEngine qtpy

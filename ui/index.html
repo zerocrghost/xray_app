@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>X-Ray Analyzer</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<div class="win">
+
+  <div class="header">
+    <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M8 7c-3 1-4 5-4 9 0 2 1 3 3 3 2 0 3-2 3-5V8M16 7c3 1 4 5 4 9 0 2-1 3-3 3-2 0-3-2-3-5V8"/></svg></div>
+    <div class="htitle"><b>X-Ray Analyzer</b><span>Chest radiograph pathology screening · TorchXRayVision</span></div>
+    <div class="spacer"></div>
+    <div class="field"><label>Model</label><div class="select" id="modelName">—</div></div>
+    <div class="field"><label>Device</label><select class="select" id="device" disabled></select></div>
+    <div class="chip busy" id="modelChip"><i></i><span>Loading model…</span></div>
+  </div>
+
+  <div class="stepper">
+    <div class="step active"><div class="num">1</div><div class="t"><b>X-Ray Analysis</b><span>Image · 11 pathologies</span></div></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="num">2</div><div class="t"><b>Symptoms &amp; Labs</b><span>5 clinical inputs</span></div></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="num">3</div><div class="t"><b>Final Report</b><span>Review &amp; export</span></div></div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: image panel -->
+    <div class="panel left">
+      <div class="ph">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5b93ff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        <h2>X-Ray Image</h2><span class="sub" id="viewSub"></span>
+        <div class="spacer"></div>
+        <div class="tools">
+          <button class="tool" id="zoomIn" title="Zoom in (+)" disabled><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aab4c8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4M11 8v6M8 11h6"/></svg></button>
+          <button class="tool" id="zoomOut" title="Zoom out (−)" disabled><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aab4c8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4M8 11h6"/></svg></button>
+          <button class="tool" id="fit" title="Fit to window (0)" disabled><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aab4c8" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          <button class="tool" id="invert" title="Invert display (I) — does not affect analysis" disabled><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aab4c8" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#aab4c8"/></svg></button>
+        </div>
+      </div>
+
+      <div class="viewer" id="viewer">
+        <div class="empty" id="empty">
+          <div class="big"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#5b93ff" stroke-width="1.8" stroke-linecap="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></div>
+          <b>No image loaded</b>
+          <span>Click <u>Upload Image</u> or press Ctrl+O<br>PNG · JPG · TIFF · DICOM</span>
+        </div>
+        <img id="img" alt="" hidden>
+        <div class="ov" id="ovTL" style="left:14px;top:12px"></div>
+        <div class="ov" id="ovTR" style="right:14px;top:12px;text-align:right"></div>
+        <div class="ov" id="ovBL" style="left:14px;bottom:12px"></div>
+      </div>
+
+      <div class="metabar" id="metabar">
+        <span>File<b>—</b></span><span>Size<b>—</b></span><span>Format<b>—</b></span><span>Input<b>224 × 224 (center-crop)</b></span>
+      </div>
+    </div>
+
+    <!-- RIGHT: results panel -->
+    <div class="panel right">
+      <div class="ph">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5b93ff" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <h2>Disease Probabilities</h2><span class="sub">· 11 pathologies</span>
+        <div class="spacer"></div>
+        <div class="seg" id="sortSeg"><button class="on" data-sort="score">Highest</button><button data-sort="name">A–Z</button></div>
+      </div>
+
+      <div id="summaryBox"></div>
+      <div class="rows" id="rows"></div>
+
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>Low &lt; <span id="lgMod">30</span>%</span>
+        <span><i style="background:var(--amber)"></i>Moderate</span>
+        <span><i style="background:var(--red)"></i>High ≥ <span id="lgHigh">50</span>%</span>
+        <div class="spacer"></div><span id="timing"></span>
+      </div>
+      <div class="disc" id="disclaimer">For research use only. Not intended for clinical diagnosis.</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="btnUpload" disabled><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#cfd6e4" stroke-width="2" stroke-linecap="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Upload Image<span class="kbd">Ctrl+O</span></button>
+    <button class="btn primary" id="btnAnalyze" disabled><svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M7 4l13 8-13 8z"/></svg>Start Analysis<span class="kbd">Ctrl+R</span></button>
+    <button class="btn" id="btnClear" disabled><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#cfd6e4" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Clear</button>
+    <button class="btn" id="btnExport" disabled><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#cfd6e4" stroke-width="2" stroke-linecap="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>Export Report<span class="kbd">Ctrl+S</span></button>
+    <div class="spacer"></div>
+    <button class="btn next" id="btnNext" disabled title="Step 2 (Symptoms &amp; Labs) is not built yet">Next: Symptoms &amp; Labs<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9fc0ff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button class="btn exit" id="btnExit"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff8a87" stroke-width="2" stroke-linecap="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>Exit</button>
+  </div>
+
+  <div class="status"><span class="busy" id="stState">● Starting…</span><span id="stFile"></span><span id="stModel"></span><div class="spacer"></div><span id="stVersion"></span></div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body></html>
