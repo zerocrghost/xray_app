@@ -1,4 +1,4 @@
-# X-Ray Analyzer desktop app (tested with Python 3.12)
+# X-Ray Analyzer desktop app (Python 3.12 - 3.14; all packages have Windows wheels for 3.14)
 pywebview==6.2.1          # on Windows this also installs pythonnet (needed for the Edge WebView2 window)
 onnxruntime==1.31.1       # for a GPU option on Windows: replace with onnxruntime-directml
 numpy==2.5.4

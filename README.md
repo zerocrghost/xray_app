@@ -16,7 +16,7 @@ A Windows desktop app built with **pywebview**. It runs the chest X-ray model
 
 ## Run on Windows
 
-1. Install **Python 3.12** from python.org and tick "Add python.exe to PATH".
+1. Install **Python 3.14** (3.12 and 3.13 also work) from python.org and tick "Add python.exe to PATH".
 2. Copy this `desktop` folder to the Windows PC, but leave out `.venv`.
 3. Double-click **`run_windows.bat`**. The first run creates `.venv` and
    installs the packages, which takes a few minutes. After that the app starts
