@@ -1,0 +1,39 @@
+/* Shared stylesheet for the design mock-ups (step1_xray / step2_clinical / step3_report).
+   It reuses the app's own stylesheet, so the mock-ups and the app share one set of theme tokens.
+   Open a mock-up as  step2_clinical.html        -> dark theme
+                      step2_clinical.html#light  -> light theme                                   */
+@import url("../ui/style.css");
+
+/* tokens used only by the step 2 / step 3 mock-ups */
+:root{
+  --input-bg:#0f1524; --input-line:#2e3a58; --input-unit:#182036; --iic-bg:#222c44;
+  --range-trk:#26304a; --mk:#ffffff; --mk-glow:rgba(255,255,255,.6); --link:#7ea6ff; --sym-t:#8fb3ff;
+  --chip-on-t:#dbe6ff; --verdict-k:#ffb3b1; --ring-track:#2a2f45; --ring-text:#ffffff; --axis:#34405c;
+  --canvas:#0a0e17; --paper-shadow:rgba(0,0,0,.6); --ta-text:#cdd4e2; --box-line:#3a4766; --sign-t:#6fe0ae;
+  --titlebar:#0a0e17;
+}
+:root[data-theme="light"]{
+  --input-bg:#ffffff; --input-line:#cfd7e5; --input-unit:#f2f5fa; --iic-bg:#eef2f8;
+  --range-trk:#e3e8f0; --mk:#172033; --mk-glow:rgba(23,32,51,.25); --link:#2563eb; --sym-t:#2563eb;
+  --chip-on-t:#1d4ed8; --verdict-k:#c62f2c; --ring-track:#e6ebf3; --ring-text:#172033; --axis:#c3cddd;
+  --canvas:#e6eaf1; --paper-shadow:rgba(16,24,40,.18); --ta-text:#2c3850; --box-line:#b6c2d8; --sign-t:#13804f;
+  --titlebar:#e9edf3;
+}
+
+/* mock window title bar */
+.titlebar{height:34px;flex:none;display:flex;align-items:center;justify-content:center;position:relative;background:var(--titlebar);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.titlebar .dots{position:absolute;left:14px;display:flex;gap:8px}
+.titlebar .dots i{width:12px;height:12px;border-radius:50%}
+
+/* mock-up spellings of app classes */
+.chip:not(.busy):not(.err){background:rgba(52,178,123,.12);color:var(--green-t);border-color:rgba(52,178,123,.3)}
+.chip:not(.busy):not(.err) i{background:var(--green);box-shadow:0 0 8px var(--green)}
+.step-line.done{background:var(--green)}
+.seg span{padding:5px 10px;border-radius:6px;color:var(--muted);cursor:pointer}
+.seg span.on{background:var(--seg-on);color:var(--text);box-shadow:var(--seg-shadow)}
+.summary:not(.high):not(.moderate):not(.low){background:linear-gradient(90deg,rgba(239,83,80,var(--tint)),rgba(239,83,80,.03));border-color:rgba(239,83,80,.35)}
+.summary:not(.high):not(.moderate):not(.low) .ic{background:rgba(239,83,80,.2)}
+.hi .bar>i{background:linear-gradient(90deg,#c43c3a,var(--red))}.row.hi .tag{background:rgba(239,83,80,.16);color:var(--red-t)}
+.md .bar>i{background:linear-gradient(90deg,#c9862a,var(--amber))}.row.md .tag{background:rgba(240,168,58,.15);color:var(--amber-t)}
+.lo .bar>i{background:linear-gradient(90deg,#258a5e,var(--green))}.row.lo .tag{background:rgba(52,178,123,.13);color:var(--green-t)}
+.viewer{background:#000}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- PneumoLens AI logo: lungs inside a scan lens, with an AI spark -->
+  <defs>
+    <linearGradient id="plBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b7bff"/>
+      <stop offset="1" stop-color="#1fc2b8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#plBg)"/>
+  <!-- lens ring -->
+  <circle cx="32" cy="34" r="24" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="2.4"/>
+  <!-- trachea + main bronchi -->
+  <path d="M32 11v15M32 26c0 3-2.5 4.6-5 5.6M32 26c0 3 2.5 4.6 5 5.6" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+  <!-- lungs -->
+  <path d="M28.6 23.2C20.8 22 14.2 30.6 13.4 41.4c-.5 6.6 2.6 9.8 7.4 9.8 5.3 0 7.8-3.6 7.8-8.6z" fill="#fff"/>
+  <path d="M35.4 23.2c7.8-1.2 14.4 7.4 15.2 18.2.5 6.6-2.6 9.8-7.4 9.8-5.3 0-7.8-3.6-7.8-8.6z" fill="#fff"/>
+  <!-- airways -->
+  <path d="M27 33.5l-6.2 5.3M26.6 41l-4.6 4M41.2 38.8L35 33.5M42 45l-4.6-4" fill="none" stroke="#2f86e6" stroke-width="2" stroke-linecap="round"/>
+  <!-- AI spark -->
+  <path d="M50 6.5l1.7 4.6 4.6 1.7-4.6 1.7L50 19.1l-1.7-4.6-4.6-1.7 4.6-1.7z" fill="#fff"/>
+</svg>

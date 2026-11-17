@@ -1,0 +1,213 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.dataset.theme = /light/.test(location.hash) ? "light" : "dark";</script>
+<style>
+.colL{flex:0 0 296px}.colC{flex:1}.colR{flex:0 0 470px}
+.thumb{margin:14px 16px 10px;border-radius:9px;overflow:hidden;background:#000;border:1px solid #1d2638;height:178px;position:relative}
+.thumb .ov{position:absolute;left:8px;bottom:6px;font-size:10.5px;color:#9fb0cc;font-family:'DejaVu Sans Mono',monospace}
+.mini{padding:0 16px}
+.mini .r{display:grid;grid-template-columns:1fr 70px 44px;gap:10px;align-items:center;height:30px;font-size:13px}
+.mini .r .bar{height:6px}.mini .r .p{text-align:right;font-family:'DejaVu Sans Mono',monospace;font-size:12px}
+.sec{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 16px 6px}
+.link{padding:10px 16px 14px;color:var(--link);font-size:12.5px}
+.pinfo{margin:auto 16px 14px;padding:12px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:12.5px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.pinfo span{color:var(--muted)}.pinfo b{font-weight:500}
+
+.items{padding:10px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+.item{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px 14px;display:grid;grid-template-columns:36px 1fr 168px 78px;column-gap:14px;row-gap:9px;align-items:center}
+.item.alert{border-color:rgba(239,83,80,.4);box-shadow:inset 3px 0 0 var(--red)}
+.item.warn{border-color:rgba(240,168,58,.4);box-shadow:inset 3px 0 0 var(--amber)}
+.item.ok{box-shadow:inset 3px 0 0 var(--green)}
+.item.sym{box-shadow:inset 3px 0 0 var(--accent)}
+.iic{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;background:var(--iic-bg)}
+.lab b{display:block;font-size:14px;font-weight:600}.lab span{font-size:12px;color:var(--muted)}
+.inp{display:flex;align-items:center;height:38px;border-radius:8px;background:var(--input-bg);border:1px solid var(--input-line);overflow:hidden}
+.inp .v{flex:1;padding:0 12px;font-size:16px;font-family:'DejaVu Sans Mono',monospace}
+.inp .u{padding:0 10px;height:100%;display:grid;place-items:center;font-size:12px;color:var(--muted);background:var(--input-unit);border-left:1px solid var(--input-line)}
+.pill{margin-left:0;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-align:center;padding:5px 0;border-radius:6px}
+.pill.h{background:rgba(239,83,80,.16);color:var(--red-t)}.pill.l{background:rgba(240,168,58,.16);color:var(--amber-t)}.pill.n{background:rgba(52,178,123,.14);color:var(--green-t)}.pill.s{background:rgba(59,123,255,.16);color:var(--sym-t)}
+.range{grid-column:2 / 5;position:relative;height:16px}
+.range .trk{position:absolute;left:0;right:0;top:6px;height:4px;border-radius:2px;background:var(--range-trk)}
+.range .nz{position:absolute;top:6px;height:4px;background:rgba(52,178,123,.55);border-radius:2px}
+.range .mk{position:absolute;top:1px;width:3px;height:14px;border-radius:2px;background:var(--mk);box-shadow:0 0 6px var(--mk-glow)}
+.range .lbl{position:absolute;top:-1px;font-size:10.5px;color:var(--dim);font-family:'DejaVu Sans Mono',monospace}
+.chips{grid-column:2 / 5;display:flex;flex-wrap:wrap;gap:7px}
+.c{padding:5px 11px;border-radius:999px;font-size:12.5px;border:1px solid var(--input-line);color:var(--muted);background:var(--input-bg)}
+.c.on{background:rgba(59,123,255,.18);border-color:#3b7bff;color:var(--chip-on-t)}
+.c.on::before{content:"✓ ";color:var(--link)}
+.c.add{border-style:dashed}
+
+.hero{margin:14px 18px 8px;padding:16px;border-radius:12px;background:linear-gradient(120deg,rgba(239,83,80,.16),rgba(59,123,255,.08));border:1px solid rgba(239,83,80,.35);display:flex;gap:16px;align-items:center}
+.hero .k{font-size:11px;color:var(--verdict-k);text-transform:uppercase;letter-spacing:.07em}
+.hero b{display:block;font-size:18px;margin:3px 0 4px}.hero span{font-size:12.5px;color:var(--sum-text)}
+.dx{padding:0 18px}
+.dx .r{display:grid;grid-template-columns:190px 1fr 52px;gap:12px;align-items:center;height:29px;font-size:13px}
+.dx .bar{height:7px}.dx .p{text-align:right;font-family:'DejaVu Sans Mono',monospace;font-size:12.5px}
+.dx .bar>i{background:linear-gradient(90deg,#2d5fd0,#5b93ff)}
+.dx .r.top .bar>i{background:linear-gradient(90deg,#c43c3a,var(--red))}
+.shap{padding:0 18px}
+.shap .r{display:grid;grid-template-columns:190px 1fr 52px;gap:12px;align-items:center;height:25px;font-size:12.5px}
+.shap .r .src{font-size:10px;color:var(--dim);margin-left:6px;border:1px solid var(--input-line);border-radius:4px;padding:0 4px}
+.shap .ax{position:relative;height:12px}
+.shap .ax::before{content:"";position:absolute;left:50%;top:-6px;bottom:-6px;width:1px;background:var(--axis)}
+.shap .ax i{position:absolute;top:1px;height:10px;border-radius:2px}
+.shap .pos{left:50%;background:#ef6a5a}.shap .neg{right:50%;background:#3fb8a6}
+.shap .p{text-align:right;font-family:'DejaVu Sans Mono',monospace;font-size:12px;color:var(--muted)}
+.rec{margin:auto 18px 8px;padding:11px 13px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:12.5px;color:var(--sum-text);line-height:1.5}
+.rec b{color:var(--text)}
+</style></head><body>
+<div class="win">
+  <div class="titlebar"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>PneumoLens AI — Symptoms &amp; Labs</div>
+
+  <div class="header">
+    <img class="logo" src="../ui/logo.svg" width="40" height="40" alt="">
+    <div class="htitle"><b>PneumoLens AI</b><span>Chest radiograph pathology screening · TorchXRayVision</span></div>
+    <div class="spacer"></div>
+    <div class="field"><label>Clinical model</label><div class="select">fusion-v1 · X-ray + clinical <span style="color:var(--muted)">▾</span></div></div>
+    <div class="field"><label>Device</label><div class="select" style="min-width:130px">CUDA · GPU 0 <span style="color:var(--muted)">▾</span></div></div>
+    <div class="chip"><i></i>Model loaded</div>
+    <div class="icon-btn" title="Theme: open this file with #light / without it for dark"><svg class="i-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="i-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></div>
+  </div>
+
+  <div class="stepper">
+    <div class="step done"><div class="num">✓</div><div class="t"><b>X-Ray Analysis</b><span>2 findings flagged</span></div></div>
+    <div class="step-line done"></div>
+    <div class="step active"><div class="num">2</div><div class="t"><b>Symptoms &amp; Labs</b><span>5 clinical inputs</span></div></div>
+    <div class="step-line"></div>
+    <div class="step"><div class="num">3</div><div class="t"><b>Final Report</b><span>Review &amp; export</span></div></div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: step 1 summary -->
+    <div class="panel colL">
+      <div class="ph"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:var(--green)"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><h2>X-Ray Result</h2><span class="sub">· Step 1</span></div>
+      <div class="thumb">
+        <svg width="264" height="178" viewBox="40 60 480 330" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <filter id="b4"><feGaussianBlur stdDeviation="4"/></filter><filter id="b10"><feGaussianBlur stdDeviation="10"/></filter>
+            <radialGradient id="body" cx="50%" cy="48%" r="60%"><stop offset="0" stop-color="#8d8d8d"/><stop offset=".7" stop-color="#5a5a5a"/><stop offset="1" stop-color="#151515"/></radialGradient>
+            <radialGradient id="lung" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#0d0d0d"/><stop offset=".8" stop-color="#262626"/><stop offset="1" stop-color="#4a4a4a"/></radialGradient>
+            <radialGradient id="heat" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff3b30" stop-opacity=".55"/><stop offset=".45" stop-color="#ffb020" stop-opacity=".3"/><stop offset="1" stop-color="#ffb020" stop-opacity="0"/></radialGradient>
+          </defs>
+          <rect x="0" y="0" width="560" height="560" fill="#050505"/>
+          <path d="M60 560 C60 380 70 200 120 120 C170 70 230 60 280 60 C330 60 390 70 440 120 C490 200 500 380 500 560Z" fill="url(#body)" filter="url(#b10)"/>
+          <path d="M262 120 C210 115 160 150 140 230 C125 300 125 380 140 440 C175 455 225 450 262 425Z" fill="url(#lung)" filter="url(#b4)"/>
+          <path d="M298 120 C350 115 400 150 420 230 C435 300 435 380 420 440 C385 455 335 450 298 425Z" fill="url(#lung)" filter="url(#b4)"/>
+          <g fill="none" stroke="#bdbdbd" stroke-width="7" opacity=".32" filter="url(#b4)">
+            <path d="M268 185 C215 175 165 200 142 245"/><path d="M268 222 C212 214 160 240 138 290"/><path d="M268 262 C212 255 158 282 136 335"/><path d="M268 302 C215 297 160 325 138 380"/>
+            <path d="M292 185 C345 175 395 200 418 245"/><path d="M292 222 C348 214 400 240 422 290"/><path d="M292 262 C348 255 402 282 424 335"/><path d="M292 302 C345 297 400 325 422 380"/>
+          </g>
+          <g fill="none" stroke="#d6d6d6" stroke-width="11" stroke-linecap="round" opacity=".55" filter="url(#b4)"><path d="M255 128 C210 112 165 110 120 128"/><path d="M305 128 C350 112 395 110 440 128"/></g>
+          <rect x="262" y="60" width="36" height="420" rx="14" fill="#a8a8a8" opacity=".75" filter="url(#b10)"/>
+          <path d="M250 270 C220 285 205 340 215 400 C240 435 330 440 385 418 C410 380 400 300 350 270 C320 255 280 258 250 270Z" fill="#9c9c9c" opacity=".85" filter="url(#b10)"/>
+          <ellipse cx="310" cy="352" rx="120" ry="95" fill="url(#heat)"/>
+        </svg>
+        <div class="ov">chest_pa_0042.png</div>
+      </div>
+      <div class="sec">Top findings</div>
+      <div class="mini">
+        <div class="r hi"><span>Cardiomegaly</span><div class="bar"><i style="width:72.4%"></i></div><span class="p">72%</span></div>
+        <div class="r hi"><span>Effusion</span><div class="bar"><i style="width:64.1%"></i></div><span class="p">64%</span></div>
+        <div class="r md"><span>Atelectasis</span><div class="bar"><i style="width:41.7%"></i></div><span class="p">42%</span></div>
+        <div class="r md"><span>Edema</span><div class="bar"><i style="width:33.5%"></i></div><span class="p">34%</span></div>
+      </div>
+      <div class="link">View all 11 X-ray results →</div>
+      <div class="pinfo"><span>Patient</span><b>ANON-0042</b><span>Study</span><b>2026-11-10</b><span>View</span><b>PA · Erect</b></div>
+    </div>
+
+    <!-- CENTER: clinical inputs -->
+    <div class="panel colC">
+      <div class="ph">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--accent-text)"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/></svg>
+        <h2>Symptoms &amp; Lab Data</h2><span class="sub">· 5 items · 3 out of range</span>
+        <div class="spacer"></div>
+        <div class="seg"><span class="on">Manual entry</span><span>From file</span></div>
+      </div>
+      <div class="items">
+        <!-- 1 Temperature -->
+        <div class="item warn">
+          <div class="iic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--amber-t)"><path d="M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0z"/><path d="M12 9v7"/></svg></div>
+          <div class="lab"><b>Body Temperature</b><span>Ref 36.1 – 37.2 °C</span></div>
+          <div class="inp"><span class="v">37.9</span><span class="u">°C</span></div>
+          <div class="pill l">ELEVATED</div>
+          <div class="range"><div class="trk"></div><div class="nz" style="left:31%;width:22%"></div><div class="mk" style="left:67%"></div></div>
+        </div>
+        <!-- 2 SpO2 -->
+        <div class="item alert">
+          <div class="iic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--red-t)"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9.5 15h5"/></svg></div>
+          <div class="lab"><b>Oxygen Saturation (SpO₂)</b><span>Ref ≥ 95 % · room air</span></div>
+          <div class="inp"><span class="v">91</span><span class="u">%</span></div>
+          <div class="pill h">LOW</div>
+          <div class="range"><div class="trk"></div><div class="nz" style="left:62%;width:38%"></div><div class="mk" style="left:44%"></div></div>
+        </div>
+        <!-- 3 Symptoms -->
+        <div class="item sym">
+          <div class="iic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--sym-t)"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></div>
+          <div class="lab"><b>Symptoms</b><span>Select all that apply</span></div>
+          <div class="inp"><span class="v" style="font-size:14px">5 days</span><span class="u">onset ▾</span></div>
+          <div class="pill s">4 SELECTED</div>
+          <div class="chips"><span class="c on">Dyspnea</span><span class="c on">Orthopnea</span><span class="c on">Cough</span><span class="c on">Fatigue</span><span class="c">Fever / chills</span><span class="c">Chest pain</span><span class="c">Leg swelling</span><span class="c add">+ Other</span></div>
+        </div>
+        <!-- 4 WBC -->
+        <div class="item ok">
+          <div class="iic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:var(--green-t)"><circle cx="9" cy="10" r="4"/><circle cx="16" cy="15" r="3.5"/><circle cx="9" cy="10" r="1.2" style="fill:var(--green-t)"/></svg></div>
+          <div class="lab"><b>White Blood Cell Count</b><span>Ref 4.0 – 11.0 ×10⁹/L</span></div>
+          <div class="inp"><span class="v">9.2</span><span class="u">×10⁹/L</span></div>
+          <div class="pill n">NORMAL</div>
+          <div class="range"><div class="trk"></div><div class="nz" style="left:20%;width:35%"></div><div class="mk" style="left:46%"></div></div>
+        </div>
+        <!-- 5 NT-proBNP -->
+        <div class="item alert">
+          <div class="iic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--red-t)"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M5 12h3l2-3 2 5 2-2h5"/></svg></div>
+          <div class="lab"><b>NT-proBNP</b><span>Ref &lt; 300 pg/mL</span></div>
+          <div class="inp"><span class="v">2,140</span><span class="u">pg/mL</span></div>
+          <div class="pill h">HIGH</div>
+          <div class="range"><div class="trk"></div><div class="nz" style="left:0;width:10%"></div><div class="mk" style="left:78%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: AI integrated analysis -->
+    <div class="panel colR">
+      <div class="ph">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--accent-text)"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+        <h2>AI Integrated Analysis</h2><span class="sub">· X-ray + clinical</span>
+      </div>
+      <div class="hero">
+        <svg width="78" height="78" viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke-width="8" style="stroke:var(--ring-track)"/><circle cx="40" cy="40" r="32" fill="none" stroke="#ef5350" stroke-width="8" stroke-linecap="round" stroke-dasharray="162.9 201" transform="rotate(-90 40 40)"/><text x="40" y="45" text-anchor="middle" font-size="18" font-weight="700" font-family="Ubuntu Sans,Ubuntu,sans-serif" style="fill:var(--ring-text)">81%</text></svg>
+        <div><div class="k">Most likely assessment</div><b>Congestive Heart Failure</b><span>Strong agreement between X-ray findings and NT-proBNP / SpO₂ values.</span></div>
+      </div>
+      <div class="sec" style="padding-left:18px">Differential</div>
+      <div class="dx">
+        <div class="r top"><span>Congestive heart failure</span><div class="bar"><i style="width:81%"></i></div><span class="p">81%</span></div>
+        <div class="r"><span>Pneumonia</span><div class="bar"><i style="width:27%"></i></div><span class="p">27%</span></div>
+        <div class="r"><span>Pleural effusion (other)</span><div class="bar"><i style="width:18%"></i></div><span class="p">18%</span></div>
+        <div class="r"><span>COPD exacerbation</span><div class="bar"><i style="width:9%"></i></div><span class="p">9%</span></div>
+      </div>
+      <div class="sec" style="padding-left:18px;display:flex">Key contributing factors<div class="spacer"></div><span style="text-transform:none;letter-spacing:0"><span style="color:#3fb8a6">■</span> lowers &nbsp;<span style="color:#ef6a5a">■</span> raises</span></div>
+      <div class="shap">
+        <div class="r"><span>NT-proBNP 2,140<span class="src">LAB</span></span><div class="ax"><i class="pos" style="width:44%"></i></div><span class="p">+0.31</span></div>
+        <div class="r"><span>Cardiomegaly 72%<span class="src">X-RAY</span></span><div class="ax"><i class="pos" style="width:32%"></i></div><span class="p">+0.22</span></div>
+        <div class="r"><span>Effusion 64%<span class="src">X-RAY</span></span><div class="ax"><i class="pos" style="width:20%"></i></div><span class="p">+0.14</span></div>
+        <div class="r"><span>Orthopnea<span class="src">SYMPTOM</span></span><div class="ax"><i class="pos" style="width:13%"></i></div><span class="p">+0.09</span></div>
+        <div class="r"><span>SpO₂ 91%<span class="src">VITAL</span></span><div class="ax"><i class="pos" style="width:9%"></i></div><span class="p">+0.06</span></div>
+        <div class="r"><span>WBC 9.2 (normal)<span class="src">LAB</span></span><div class="ax"><i class="neg" style="width:11%"></i></div><span class="p">−0.08</span></div>
+      </div>
+      <div class="rec"><b>Suggested follow-up:</b> echocardiogram, electrolytes &amp; renal function, repeat chest X-ray after treatment. <span style="color:var(--dim)">AI decision support only — confirm with a clinician.</span></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:currentColor"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Back to X-Ray</div>
+    <div class="btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:currentColor"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Import Lab File</div>
+    <div class="btn primary"><svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M7 4l13 8-13 8z"/></svg>Run AI Analysis<span class="kbd">Ctrl+R</span></div>
+    <div class="btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:currentColor"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Clear Data</div>
+    <div class="spacer"></div>
+    <div class="btn next">Next: Final Report<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--next-t)"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="btn exit"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--exit-t)"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>Exit</div>
+  </div>
+
+  <div class="status"><span class="ok">● Integrated analysis complete</span><span>5 / 5 inputs provided</span><span>fusion-v1</span><div class="spacer"></div><span>Inference 0.12 s</span></div>
+</div>
+</body></html>

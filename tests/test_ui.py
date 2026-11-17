@@ -40,6 +40,15 @@ def check(cond, msg):
         results["failures"].append(msg)
 
 
+def _wait_file(cond, timeout=5):
+    end = time.time() + timeout
+    while time.time() < end:
+        if cond():
+            return True
+        time.sleep(0.1)
+    return False
+
+
 def drive(window, api):
     js = window.evaluate_js
 
@@ -61,11 +70,29 @@ def drive(window, api):
     try:
         check(wait_for("document.querySelector('#modelChip').textContent.includes('Model loaded')"),
               "model loads at start-up")
+        check(js("document.body.classList.contains('landing-on')") is True, "app opens on the landing page")
+        check(wait_for("!document.querySelector('#btnLandOpen').disabled"), "landing 'Open X-ray Image' is enabled")
+        js("document.querySelector('#btnStart').click()")
+        check(js("!document.body.classList.contains('landing-on')") is True, "Start New Analysis opens step 1")
         check(js("document.querySelector('#btnAnalyze').disabled") is True,
               "Start Analysis is disabled before an image is loaded")
+        js("document.querySelector('#btnHome').click()")
+        check(js("document.body.classList.contains('landing-on')") is True, "logo button goes back to the landing page")
 
-        js("document.querySelector('#btnUpload').click()")
+        # theme switch: toggles <html data-theme>, is saved to settings.json, Ctrl+T toggles back
+        start_theme = js("document.documentElement.dataset.theme")
+        check(start_theme in ("dark", "light"), f"a theme is applied at start-up ({start_theme})")
+        js("document.querySelector('.theme-btn').click()")
+        flipped = "light" if start_theme == "dark" else "dark"
+        check(js("document.documentElement.dataset.theme") == flipped, "the theme button switches the theme")
+        check(wait_for(f"true") and _wait_file(lambda: app.load_settings().get("theme") == flipped),
+              "the chosen theme is saved for the next start")
+        js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 't', ctrlKey: true}))")
+        check(js("document.documentElement.dataset.theme") == start_theme, "Ctrl+T switches it back")
+
+        js("document.querySelector('#btnLandOpen').click()")     # open from the landing page
         check(wait_for("!document.querySelector('#btnAnalyze').disabled"), "upload enables Start Analysis")
+        check(js("!document.body.classList.contains('landing-on')") is True, "opening an image switches to step 1")
         check(wait_for("document.querySelector('#img').naturalWidth > 0"), "image preview is shown")
         check(IMAGE in js("document.querySelector('#metabar').textContent"), "metabar shows the file name")
 
@@ -99,6 +126,52 @@ def drive(window, api):
         js("document.querySelector('#btnClear').click()")
         check(wait_for("document.querySelector('#btnAnalyze').disabled && document.querySelectorAll('#rows .pending').length === 11"),
               "Clear resets the screen")
+
+        # clicking the empty image panel opens the file dialog too
+        answers.append([str(HERE / "images" / IMAGE)])
+        js("document.querySelector('#empty').click()")
+        check(wait_for("document.querySelector('#img').naturalWidth > 0 && !document.querySelector('#img').hidden"),
+              "clicking the empty image panel opens the upload dialog")
+        check(js("getComputedStyle(document.querySelector('#empty')).display") == "none",
+              "the empty-panel layer is really hidden once an image is shown")
+
+        # with an image shown, zoom + drag + clicks on the viewer must NOT open the upload dialog
+        calls = []
+        window.create_file_dialog = lambda *a, **k: calls.append(1)
+        js("""(() => {
+          const v = document.querySelector('#viewer'), r = v.getBoundingClientRect();
+          const x = r.left + r.width / 2, y = r.top + r.height / 2;
+          const at = (el, type, dx = 0) => el.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: x + dx, clientY: y, button: 0}));
+          document.querySelector('#zoomIn').click();
+          v.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, deltaY: -100, clientX: x, clientY: y}));
+          const top = document.elementFromPoint(x, y);
+          at(top, 'mousedown'); at(window, 'mousemove', 60); at(top, 'mouseup', 60); at(top, 'click', 60);
+          at(top, 'click');
+        })()""")
+        time.sleep(1)
+        check(calls == [] and js("document.querySelector('#stState').textContent").endswith("Image loaded"),
+              "zooming, dragging and clicking the shown image does not open the upload dialog")
+        window.create_file_dialog = lambda *a, **k: answers.pop(0)
+
+        # Exit asks for confirmation
+        modal = "!document.querySelector('#exitModal').hidden"
+        js("document.querySelector('#btnExit').click()")
+        check(js(modal) is True, "Exit opens the confirmation dialog")
+        check(js("document.activeElement.id") == "exitConfirm", "the Exit button has focus")
+        js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
+        check(js(modal) is False, "Esc closes the dialog without exiting")
+        js("document.querySelector('#btnAnalyze').click()")
+        wait_for("document.querySelectorAll('#rows .row:not(.pending)').length === 11")
+        js("document.querySelector('#btnExit').click()")
+        check("not been exported" in js("document.querySelector('#exitText').textContent"),
+              "the dialog warns when the analysis was not exported")
+        js("document.querySelector('#exitCancel').click()")
+        check(js(modal) is False, "Cancel closes the dialog")
+        exited = []
+        api.exit = lambda: exited.append(True)         # don't really close the window mid-test
+        js("document.querySelector('#btnExit').click()")
+        js("document.querySelector('#exitConfirm').click()")
+        check(wait_for("true") and (time.sleep(0.5) or exited == [True]), "confirming calls exit")
     except Exception:
         traceback.print_exc()
         results["failures"].append("exception")
@@ -107,9 +180,10 @@ def drive(window, api):
 
 
 def main():
+    app.SETTINGS_PATH = Path(tempfile.mkdtemp()) / "settings.json"   # never touch the user's real settings
     api = app.Api()
-    window = webview.create_window("X-Ray Analyzer (test)", url=str(app.UI_INDEX), js_api=api,
-                                   width=1440, height=900)
+    window = webview.create_window(f"{app.APP_NAME} (test)", url=str(app.UI_INDEX), js_api=api,
+                                   width=1440, height=900, min_size=app.MIN_WINDOW_SIZE)
     api._window = window
     webview.start(drive, (window, api), gui=GUI)
     print("RESULT:", "FAIL" if results["failures"] else "PASS")

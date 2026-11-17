@@ -1,4 +1,4 @@
-// X-Ray Analyzer UI. Talks to Python through `pywebview.api` (see app.py).
+// PneumoLens AI UI. Talks to Python through `pywebview.api` (see app.py).
 "use strict";
 
 const $ = (id) => document.getElementById(id);
@@ -12,6 +12,7 @@ const state = {
   labels: [],
   bands: { high: 0.5, moderate: 0.3 },
   sort: "score",
+  exported: false,   // current result has been saved with Export Report
 };
 
 // ------------------------------------------------------------------ helpers
@@ -41,13 +42,31 @@ function setStatus(kind, text) {
 }
 
 function setChip(kind, text) {
-  $("modelChip").className = "chip " + kind;
-  $("modelChip").querySelector("span").textContent = text;
+  for (const id of ["modelChip", "landChip"]) {
+    $(id).className = "chip " + kind;
+    $(id).querySelector("span").textContent = text;
+  }
+}
+
+// ------------------------------------------------------------------ pages (landing <-> workspace)
+const onLanding = () => document.body.classList.contains("landing-on");
+
+function showWorkspace() {
+  if (!onLanding()) return;
+  document.body.classList.remove("landing-on");
+  fitView();                    // the viewer had no size while hidden
+}
+
+function showLanding() {
+  if (state.busy) return;
+  document.body.classList.add("landing-on");
 }
 
 function updateButtons() {
   const idle = state.ready && !state.busy;
   $("btnUpload").disabled = !idle;
+  $("btnLandOpen").disabled = !idle;
+  $("empty").classList.toggle("disabled", !idle);
   $("btnAnalyze").disabled = !idle || !state.image;
   $("btnClear").disabled = !idle || !state.image;
   $("btnExport").disabled = !idle || !state.result;
@@ -102,7 +121,6 @@ function renderResults() {
       : mods.length
         ? [`No high findings · ${mods.length} moderate`, list(mods)]
         : [`No findings above ${mp}%`, "All 11 pathologies are in the low range"];
-    const colors = { high: "#ff7b78", moderate: "#ffc066", low: "#5fd3a0" };
     const icons = {
       high: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
       moderate: '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/>',
@@ -110,9 +128,11 @@ function renderResults() {
     };
     const s = el("div", "summary " + level);
     const ic = el("div", "ic");
-    ic.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${colors[level]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${icons[level]}</svg>`;
+    ic.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${icons[level]}</svg>`;
     const txt = el("div");
-    txt.append(el("b", null, title), el("span", null, detail));
+    const d = el("span", null, detail);
+    d.title = detail;
+    txt.append(el("b", null, title), d);
     s.append(ic, txt);
     box.append(s);
   }
@@ -155,7 +175,7 @@ function applyView() {
 }
 
 function fitView() {
-  if (!state.image) return;
+  if (!state.image || onLanding()) return;
   const v = $("viewer").getBoundingClientRect();
   view.fit = Math.min(v.width / view.w, v.height / view.h);
   view.scale = view.fit;
@@ -186,6 +206,7 @@ function showImage(data) {
     view.h = img.naturalHeight;
     img.hidden = false;
     $("empty").hidden = true;
+    $("viewer").classList.add("has-img");
     fitView();
   };
   img.src = data.preview;
@@ -203,6 +224,7 @@ function showImage(data) {
                         ["Input", "224 × 224 (center-crop)"]]) {
     const s = el("span", null, k);
     s.append(el("b", null, v));
+    s.title = v;                // full value on hover when it is cut off
     meta.append(s);
   }
   $("stFile").textContent = info.file;
@@ -221,6 +243,7 @@ function clearImage() {
   img.classList.remove("inverted");
   $("invert").classList.remove("on");
   $("empty").hidden = false;
+  $("viewer").classList.remove("has-img");
   for (const id of ["ovTL", "ovTR", "ovBL", "viewSub", "stFile"]) $(id).textContent = "";
   const meta = $("metabar");
   meta.replaceChildren();
@@ -267,7 +290,7 @@ function clearImage() {
 async function uploadImage() {
   if (!state.ready || state.busy) return;
   const r = await call(() => api().open_image(), "Opening image…");
-  if (r && !r.cancelled) showImage(r);
+  if (r && !r.cancelled) { showWorkspace(); showImage(r); }
   else if (r && r.cancelled) setStatus("ok", state.image ? "Image loaded" : "Ready");
 }
 
@@ -279,6 +302,7 @@ async function analyze() {
   const r = await call(() => api().analyze(), "Analyzing…");
   if (r) {
     state.result = r;
+    state.exported = false;
     setStatus("ok", "Analysis complete");
   }
   renderResults();
@@ -288,7 +312,7 @@ async function analyze() {
 async function exportReport() {
   if (!state.result || state.busy) return;
   const r = await call(() => api().export_report(), "Exporting…");
-  if (r && !r.cancelled) toast("Report saved: " + r.path);
+  if (r && !r.cancelled) { state.exported = true; toast("Report saved: " + r.path); }
   setStatus(r ? "ok" : "err", r ? "Analysis complete" : "Export failed");
 }
 
@@ -310,11 +334,56 @@ async function changeDevice(e) {
   setStatus("ok", state.result ? "Analysis complete" : state.image ? "Image loaded" : "Ready");
 }
 
+// ------------------------------------------------------------------ theme (dark / light)
+const theme = () => document.documentElement.dataset.theme;
+
+function setTheme(t, save = true) {
+  document.documentElement.dataset.theme = t;
+  const next = t === "light" ? "dark" : "light";
+  for (const b of document.querySelectorAll(".theme-btn")) b.title = `Switch to ${next} theme (Ctrl+T)`;
+  if (save && window.pywebview && window.pywebview.api) api().set_theme(t);   // remembered for the next start
+}
+
+function toggleTheme() { setTheme(theme() === "light" ? "dark" : "light"); }
+
+for (const b of document.querySelectorAll(".theme-btn")) b.onclick = toggleTheme;
+setTheme(theme(), false);
+
+// ------------------------------------------------------------------ exit confirmation
+const exitOpen = () => !$("exitModal").hidden;
+
+function openExitModal() {
+  $("exitText").textContent = state.result && !state.exported
+    ? "The current analysis has not been exported. It will be lost when the app closes."
+    : "Are you sure you want to close the application?";
+  $("exitModal").hidden = false;
+  $("exitConfirm").focus();
+}
+
+function closeExitModal() {
+  $("exitModal").hidden = true;
+}
+
+$("btnExit").onclick = openExitModal;
+$("exitCancel").onclick = closeExitModal;
+$("exitConfirm").onclick = () => api().exit();
+$("exitModal").addEventListener("mousedown", (e) => { if (e.target === e.currentTarget) closeExitModal(); });
+
+// empty image panel: click (or Enter / Space when focused) opens the file dialog
+$("empty").addEventListener("click", () => {
+  if (!state.image && !$("empty").classList.contains("disabled")) uploadImage();   // only while no image is shown
+});
+$("empty").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); $("empty").click(); }
+});
+
+$("btnStart").onclick = showWorkspace;
+$("btnLandOpen").onclick = uploadImage;
+$("btnHome").onclick = showLanding;
 $("btnUpload").onclick = uploadImage;
 $("btnAnalyze").onclick = analyze;
 $("btnExport").onclick = exportReport;
 $("btnClear").onclick = clearAll;
-$("btnExit").onclick = () => api().exit();
 $("zoomIn").onclick = () => zoomAt(1.25);
 $("zoomOut").onclick = () => zoomAt(1 / 1.25);
 $("fit").onclick = fitView;
@@ -335,6 +404,26 @@ $("sortSeg").addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
+  if (exitOpen()) {             // modal: Esc cancels, Enter exits, everything else is blocked
+    if (e.key === "Escape") closeExitModal();
+    else if (e.key === "Enter") {  // Enter presses the focused button (Exit by default)
+      document.activeElement === $("exitCancel") ? closeExitModal() : $("exitConfirm").click();
+    }
+    else if (e.key === "Tab") {  // keep focus inside the dialog
+      e.preventDefault();
+      ($("exitConfirm") === document.activeElement ? $("exitCancel") : $("exitConfirm")).focus();
+      return;
+    }
+    e.preventDefault();
+    return;
+  }
+  if (e.ctrlKey && k === "t") { e.preventDefault(); toggleTheme(); return; }
+  if (onLanding()) {            // landing page: only Enter (start) and Ctrl+O (open) do something
+    if (e.key === "Enter" && !e.ctrlKey) { e.preventDefault(); showWorkspace(); }
+    else if (e.ctrlKey && k === "o") { e.preventDefault(); uploadImage(); }
+    else if ((e.ctrlKey && (k === "r" || k === "s")) || e.key === "F5") e.preventDefault();
+    return;
+  }
   if (e.ctrlKey && k === "o") { e.preventDefault(); uploadImage(); }
   else if (e.ctrlKey && k === "r") { e.preventDefault(); analyze(); }      // also blocks page reload
   else if (e.ctrlKey && k === "s") { e.preventDefault(); exportReport(); }
@@ -352,6 +441,7 @@ async function start() {
   setStatus("busy", "Loading model…");
   const r = await api().init();
   if (!r.ok) {
+    $("btnLandOpen").disabled = true;
     setChip("err", "Model failed to load");
     setStatus("err", "Model failed to load");
     toast(r.error, true);
@@ -362,6 +452,7 @@ async function start() {
   state.bands = r.bands;
   state.device = r.device;
   $("modelName").textContent = r.model;
+  $("landModel").textContent = r.model;
   $("stModel").textContent = r.model;
   $("stVersion").textContent = r.versions;
   $("disclaimer").textContent = r.disclaimer;
