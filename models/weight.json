@@ -1,0 +1,4010 @@
+{
+  "name": "PneumoLens AI clinical weighting table",
+  "version": "1.4",
+  "updated": "2026-11-17",
+  "disclaimer": "Decision support for research use only. Weights are expert-style assumptions derived from the cited guidelines and textbook descriptions, not fitted to patient data. They must be validated before clinical use.",
+  "method": {
+    "groups": {
+      "A": {
+        "meaning": "Most important / critical: a defining feature or diagnostic criterion of the disease.",
+        "range": [
+          2.5,
+          3.5
+        ],
+        "absence_factor": 1.0,
+        "presence_factor": 1.0
+      },
+      "B": {
+        "meaning": "Important: common, supportive or used to grade severity.",
+        "range": [
+          1.5,
+          2.4
+        ],
+        "absence_factor": 0.6,
+        "presence_factor": 0.8
+      },
+      "C": {
+        "meaning": "Slightly related: occasional, non-specific, risk factor or argues against an alternative.",
+        "range": [
+          0.3,
+          1.4
+        ],
+        "absence_factor": 0.3,
+        "presence_factor": 0.5
+      },
+      "D": {
+        "meaning": "Not related: ignored for this disease.",
+        "range": [
+          0,
+          0
+        ],
+        "absence_factor": 0,
+        "presence_factor": 0
+      }
+    },
+    "exclusion": "Patterns marked exclusion (no fever, normal WBC, normal spirometry, X-ray finding absent, ...) are exclusion criteria. A fulfilled exclusion (normal value) adds nothing, because a normal value is common to almost every disease; a violated one (abnormal value) counts fully against the disease (w·(1 − s) in the denominator), whatever its group.",
+    "evidence": "Each entered item gets an evidence value s between 0 and 1: how strongly the patient's value shows the finding named in 'expect' (default: the feature's 'default' pattern). Numeric patterns ramp linearly: s = 0 at 'from', s = 1 at 'full'. Yes/no symptoms give 1 or 0. Auscultation gives the highest credit among the sounds heard. X-ray items use the step-1 model score.",
+    "score": "match = (Σ w·s·p + prior·K) / (Σ w·(s + (1 − s)·a) + K) over the items that were entered (items left empty are skipped; exclusions: see 'exclusion'). p is the group's presence_factor (specificity: how much a present finding speaks FOR the disease) and a its absence_factor (sensitivity: how much a missing finding speaks AGAINST it). A present A finding counts fully, a present C finding only half, because occasional findings are shared by many diseases. A missing A finding counts fully against the disease (a defining feature is absent), a missing C finding only a little (occasional findings are often absent even when the disease is there).",
+    "prior": 0.2,
+    "prior_strength_K": 4.0,
+    "coverage": "coverage = Σ weight of entered items / Σ weight of all items of the disease. Below 'low_coverage' the result is marked as low confidence.",
+    "low_coverage": 0.35,
+    "parts": "The same formula is also applied to the X-ray items alone (step 1) and to the clinical items alone (step 2). The final report shows both parts next to the combined match, so the reader sees what each step contributed; the combined match is not an average of the parts but the formula over all entered items.",
+    "severity": {
+      "meaning": "How severe the disease is, graded from its guideline severity signs (listed per disease under 'severity'), not from the match score. Each entered sign is none, moderate or severe by its thresholds.",
+      "points": {
+        "moderate": 1,
+        "severe": 2
+      },
+      "grades": [
+        {
+          "grade": "Severe",
+          "rule": "at least 2 severe signs, or 4 points or more"
+        },
+        {
+          "grade": "Moderate",
+          "rule": "1 to 3 points"
+        },
+        {
+          "grade": "Mild",
+          "rule": "at least 2 signs were measured and none crosses a threshold (0 points)"
+        },
+        {
+          "grade": "Not assessable",
+          "rule": "fewer than 2 severity signs were measured and none is abnormal"
+        }
+      ],
+      "severe_points": 4,
+      "severe_signs": 2,
+      "min_signs": 2,
+      "note": "Weak signals (values just outside the reference range) stay below the moderate thresholds and give Mild; clear, strongly abnormal values cross the severe thresholds and give Severe."
+    },
+    "notes": [
+      "The 7 match scores are independent (several diseases can coexist, e.g., COPD with pneumonia); they do not add up to 100 %.",
+      "FEV1/FVC is calculated from FEV1 and FVC when both are entered and the ratio is empty.",
+      "Spirometry (FEV1, FVC, %FEV1, FEV1/FVC) is optional. It is the deciding test for COPD and airflow obstruction, so it separates asthma, COPD, chronic bronchitis and bronchiectasis from the acute infections; leave it empty when not measured."
+    ]
+  },
+  "spirometry_assessment": {
+    "verdict": "Important. Include as optional inputs.",
+    "FEV1/FVC": "The key value. A post-bronchodilator FEV1/FVC < 0.70 is required to diagnose COPD (GOLD) and documents the airflow limitation of asthma (GINA). Group A for COPD and asthma, B for chronic bronchitis and bronchiectasis.",
+    "%FEV1": "FEV1 as % of the predicted value for age, sex and height. Grades obstruction severity (GOLD 1–4) and is part of the Bronchiectasis Severity Index. Group A for COPD, B for asthma and bronchiectasis.",
+    "FEV1": "The absolute volume depends on age, sex and height, so alone it is weak (group B–C); its main use is to compute FEV1/FVC.",
+    "FVC": "A low FVC with a normal ratio shows restriction (e.g., large pleural effusion). Group C at most.",
+    "acute_diseases": "Spirometry is not done in acute pneumonia or lung abscess, so it is group D there."
+  },
+  "alerts": [
+    {
+      "field": "spo2",
+      "below": 90,
+      "text": "SpO₂ < 90 % — hypoxemia, consider oxygen and urgent assessment"
+    },
+    {
+      "field": "rr",
+      "at_least": 30,
+      "text": "RR ≥ 30 /min — CURB-65 severity criterion"
+    },
+    {
+      "field": "sbp",
+      "below": 90,
+      "text": "Systolic BP < 90 mmHg — CURB-65 severity criterion / possible sepsis"
+    },
+    {
+      "field": "dbp",
+      "at_most": 60,
+      "text": "Diastolic BP ≤ 60 mmHg — CURB-65 severity criterion"
+    },
+    {
+      "field": "gcs",
+      "below": 15,
+      "text": "GCS < 15 — altered consciousness (CURB-65 confusion)"
+    },
+    {
+      "field": "bt",
+      "at_least": 39.0,
+      "text": "Temperature ≥ 39 °C — high fever"
+    },
+    {
+      "field": "bt",
+      "below": 35.0,
+      "text": "Temperature < 35 °C — hypothermia (severe sepsis)"
+    },
+    {
+      "field": "pr",
+      "at_least": 125,
+      "text": "Pulse ≥ 125 /min — severe tachycardia"
+    }
+  ],
+  "categories": {
+    "symptom": "Symptoms",
+    "history": "History & exposure",
+    "auscultation": "Auscultation",
+    "vital": "Vital signs",
+    "lab": "Laboratory",
+    "spirometry": "Spirometry (optional)",
+    "xray": "X-ray (step 1)"
+  },
+  "xray_selection": {
+    "used": {
+      "Pneumonia": "Infiltrate typical of pneumonia — the radiographic criterion of pneumonia.",
+      "Consolidation": "Airspace consolidation — pneumonia, abscess (surrounding pneumonitis).",
+      "Lung Opacity": "Any parenchymal opacity — infiltrates of pneumonia and abscess.",
+      "Infiltration": "Interstitial / patchy infiltrates — pneumonia; tram lines in bronchiectasis.",
+      "Atelectasis": "Volume loss — mucus plugging / scarring in bronchiectasis.",
+      "Effusion": "Pleural fluid — pleurisy, parapneumonic effusion, empyema.",
+      "Pleural_Thickening": "Pleural inflammation or scarring — pleurisy.",
+      "Emphysema": "Hyperinflation / bullae — COPD; overlap with chronic bronchitis and asthma.",
+      "Fibrosis": "Parenchymal scarring — around bronchiectatic airways.",
+      "Mass": "Round opacity — proxy for an abscess cavity (the model has no 'cavity' label).",
+      "Lung Lesion": "Focal lesion — proxy for an abscess cavity.",
+      "Nodule": "Small focal opacity — non-specific; kept so it can be weighted, D for all 7 diseases.",
+      "Pneumothorax": "Air in the pleural space — complication of COPD (bullae), severe asthma and lung abscess.",
+      "Edema": "Pulmonary edema — the main radiographic mimic of pneumonia (heart failure); used as an exclusion."
+    },
+    "not_used": {
+      "Cardiomegaly": "Heart size — a cardiac finding, not a sign of any of the 7 lung diseases.",
+      "Enlarged Cardiomediastinum": "Heart / mediastinum contour — cardiac or mediastinal, not lung parenchyma or pleura.",
+      "Hernia": "Hiatal / diaphragmatic hernia — gastrointestinal, not a lung disease.",
+      "Fracture": "Rib or clavicle fracture — skeletal, not a lung disease."
+    }
+  },
+  "lab_groups": [
+    {
+      "id": "inflammation",
+      "title": "Inflammation markers",
+      "items": [
+        "wbc",
+        "esr"
+      ],
+      "why": "General markers of whether inflammation / infection is present."
+    },
+    {
+      "id": "differential",
+      "title": "WBC differential",
+      "items": [
+        "stab",
+        "seg",
+        "eos",
+        "bas",
+        "lym",
+        "mon"
+      ],
+      "why": "The type of the response: neutrophils / left shift (bacterial), eosinophils (allergic, asthma), lymphocytes (viral, severe illness). The six percentages add up to about 100 %.",
+      "sum_to_100": true
+    },
+    {
+      "id": "chemistry",
+      "title": "Liver function & chemistry",
+      "items": [
+        "alt",
+        "ast",
+        "tp",
+        "ztt",
+        "glu"
+      ],
+      "why": "Liver enzymes (ALT, AST), protein / globulin synthesis (TP, ZTT) and blood glucose (metabolic, not a liver test)."
+    }
+  ],
+  "features": {
+    "fever": {
+      "label": "Fever",
+      "category": "symptom",
+      "input": "bool",
+      "hint": "Reported fever / chills",
+      "patterns": {
+        "present": {
+          "type": "present"
+        },
+        "absent": {
+          "type": "absent",
+          "exclusion": true
+        }
+      },
+      "default": "present"
+    },
+    "dyspnea": {
+      "label": "Dyspnea",
+      "category": "symptom",
+      "input": "bool",
+      "hint": "Shortness of breath",
+      "patterns": {
+        "present": {
+          "type": "present"
+        },
+        "absent": {
+          "type": "absent",
+          "exclusion": true
+        }
+      },
+      "default": "present"
+    },
+    "wheezing": {
+      "label": "Wheezing",
+      "category": "symptom",
+      "input": "bool",
+      "hint": "Whistling breath noticed by the patient",
+      "patterns": {
+        "present": {
+          "type": "present"
+        },
+        "absent": {
+          "type": "absent",
+          "exclusion": true
+        }
+      },
+      "default": "present"
+    },
+    "cough": {
+      "label": "Cough",
+      "category": "symptom",
+      "input": "bool",
+      "hint": "Dry or productive",
+      "patterns": {
+        "present": {
+          "type": "present"
+        },
+        "absent": {
+          "type": "absent",
+          "exclusion": true
+        }
+      },
+      "default": "present"
+    },
+    "sputum": {
+      "label": "Sputum",
+      "category": "symptom",
+      "input": "bool",
+      "hint": "Phlegm production",
+      "patterns": {
+        "present": {
+          "type": "present"
+        },
+        "absent": {
+          "type": "absent",
+          "exclusion": true
+        }
+      },
+      "default": "present"
+    },
+    "chest_pain": {
+      "label": "Chest pain",
+      "category": "symptom",
+      "input": "bool",
+      "hint": "Incl. pleuritic pain / chest tightness",
+      "patterns": {
+        "present": {
+          "type": "present"
+        },
+        "absent": {
+          "type": "absent",
+          "exclusion": true
+        }
+      },
+      "default": "present"
+    },
+    "exposure": {
+      "label": "Noxious exposure",
+      "short": "Exposure",
+      "category": "history",
+      "input": "sounds",
+      "exclusive": "none",
+      "hint": "Exposure to noxious particles or gases (GOLD risk factors)",
+      "sounds": {
+        "smoking_current": "Current smoker",
+        "smoking_former": "Former smoker",
+        "occupational": "Occupational dust / chemicals / fumes",
+        "biomass": "Biomass / indoor smoke",
+        "pollution": "Heavy outdoor air pollution",
+        "passive": "Passive smoking",
+        "none": "No relevant exposure"
+      },
+      "patterns": {},
+      "default": null
+    },
+    "pack_years": {
+      "label": "Smoking (pack-years)",
+      "short": "Pack-years",
+      "category": "history",
+      "input": "number",
+      "unit": "pack-yr",
+      "ref": null,
+      "ref_text": "packs/day × years smoked; 0 = never",
+      "limits": [
+        0,
+        200
+      ],
+      "step": 1,
+      "patterns": {
+        "heavy": {
+          "type": "above",
+          "from": 0,
+          "full": 20
+        },
+        "light": {
+          "type": "below",
+          "from": 20,
+          "full": 10,
+          "exclusion": true
+        }
+      },
+      "default": "heavy",
+      "hint": "Packs per day × years smoked; leave blank if unknown"
+    },
+    "duration": {
+      "label": "Illness duration",
+      "short": "Duration",
+      "category": "history",
+      "input": "sounds",
+      "single": true,
+      "hint": "How long the current symptoms have lasted (cough-guideline classes)",
+      "sounds": {
+        "acute": "Acute · < 3 weeks",
+        "subacute": "Subacute · 3–8 weeks",
+        "chronic": "Chronic · > 8 weeks",
+        "years": "Years · slowly progressive",
+        "episodic": "Recurrent episodes · well in between"
+      },
+      "patterns": {},
+      "default": null
+    },
+    "auscultation": {
+      "label": "Auscultation",
+      "category": "auscultation",
+      "input": "sounds",
+      "exclusive": "normal",
+      "hint": "Lung sounds heard on auscultation",
+      "sounds": {
+        "normal": "Normal vesicular",
+        "wheeze": "Wheezes",
+        "rhonchi": "Rhonchi",
+        "fine_crackles": "Fine crackles",
+        "coarse_crackles": "Coarse crackles",
+        "bronchial": "Bronchial breath sounds",
+        "diminished": "Diminished breath sounds",
+        "friction_rub": "Pleural friction rub"
+      },
+      "patterns": {},
+      "default": null
+    },
+    "bp": {
+      "label": "Blood pressure",
+      "short": "BP",
+      "category": "vital",
+      "input": "bp",
+      "fields": [
+        "sbp",
+        "dbp"
+      ],
+      "unit": "mmHg",
+      "ref": {
+        "sbp": [
+          90,
+          139
+        ],
+        "dbp": [
+          60,
+          89
+        ]
+      },
+      "ref_text": "90–139 / 60–89",
+      "limits": {
+        "sbp": [
+          40,
+          300
+        ],
+        "dbp": [
+          20,
+          200
+        ]
+      },
+      "patterns": {
+        "hypotension": {
+          "type": "any",
+          "of": [
+            {
+              "type": "below",
+              "from": 100,
+              "full": 90,
+              "field": "sbp"
+            },
+            {
+              "type": "below",
+              "from": 65,
+              "full": 60,
+              "field": "dbp"
+            }
+          ]
+        }
+      },
+      "default": "hypotension"
+    },
+    "pr": {
+      "label": "Pulse rate",
+      "short": "PR",
+      "category": "vital",
+      "input": "number",
+      "unit": "/min",
+      "ref": [
+        60,
+        100
+      ],
+      "limits": [
+        20,
+        250
+      ],
+      "step": 1,
+      "patterns": {
+        "tachycardia": {
+          "type": "above",
+          "from": 100,
+          "full": 125
+        }
+      },
+      "default": "tachycardia"
+    },
+    "bt": {
+      "label": "Body temperature",
+      "short": "BT",
+      "category": "vital",
+      "input": "number",
+      "unit": "°C",
+      "ref": [
+        36.0,
+        37.2
+      ],
+      "limits": [
+        30,
+        43
+      ],
+      "step": 0.1,
+      "patterns": {
+        "fever": {
+          "type": "above",
+          "from": 37.3,
+          "full": 38.5
+        },
+        "afebrile": {
+          "type": "below",
+          "from": 38.0,
+          "full": 37.3,
+          "exclusion": true
+        }
+      },
+      "default": "fever"
+    },
+    "rr": {
+      "label": "Respiratory rate",
+      "short": "RR",
+      "category": "vital",
+      "input": "number",
+      "unit": "/min",
+      "ref": [
+        12,
+        20
+      ],
+      "limits": [
+        4,
+        70
+      ],
+      "step": 1,
+      "patterns": {
+        "tachypnea": {
+          "type": "above",
+          "from": 20,
+          "full": 30
+        }
+      },
+      "default": "tachypnea"
+    },
+    "gcs": {
+      "label": "Glasgow Coma Scale",
+      "short": "GCS",
+      "category": "vital",
+      "input": "number",
+      "unit": "3–15",
+      "ref": [
+        15,
+        15
+      ],
+      "limits": [
+        3,
+        15
+      ],
+      "step": 1,
+      "patterns": {
+        "reduced": {
+          "type": "below",
+          "from": 15,
+          "full": 12
+        }
+      },
+      "default": "reduced"
+    },
+    "spo2": {
+      "label": "Oxygen saturation",
+      "short": "SpO₂",
+      "category": "vital",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        96,
+        100
+      ],
+      "limits": [
+        50,
+        100
+      ],
+      "step": 1,
+      "patterns": {
+        "low": {
+          "type": "below",
+          "from": 96,
+          "full": 90
+        }
+      },
+      "default": "low"
+    },
+    "wbc": {
+      "label": "White blood cells",
+      "short": "WBC",
+      "category": "lab",
+      "input": "number",
+      "unit": "×10³/µL",
+      "ref": [
+        3.5,
+        9.0
+      ],
+      "limits": [
+        0.1,
+        200
+      ],
+      "step": 0.1,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 9.0,
+          "full": 15.0
+        },
+        "not_high": {
+          "type": "below",
+          "from": 11.0,
+          "full": 9.0,
+          "exclusion": true
+        }
+      },
+      "default": "high",
+      "subgroup": "inflammation"
+    },
+    "esr": {
+      "label": "Erythrocyte sedimentation rate",
+      "short": "ESR",
+      "category": "lab",
+      "input": "number",
+      "unit": "mm/h",
+      "ref": [
+        0,
+        20
+      ],
+      "limits": [
+        0,
+        200
+      ],
+      "step": 1,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 20,
+          "full": 60
+        },
+        "normal": {
+          "type": "below",
+          "from": 30,
+          "full": 20,
+          "exclusion": true
+        }
+      },
+      "default": "high",
+      "subgroup": "inflammation"
+    },
+    "stab": {
+      "label": "Band neutrophils",
+      "short": "STAB",
+      "category": "lab",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        0,
+        6
+      ],
+      "limits": [
+        0,
+        100
+      ],
+      "step": 0.5,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 6,
+          "full": 15
+        }
+      },
+      "default": "high",
+      "subgroup": "differential"
+    },
+    "seg": {
+      "label": "Segmented neutrophils",
+      "short": "SEG",
+      "category": "lab",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        40,
+        70
+      ],
+      "limits": [
+        0,
+        100
+      ],
+      "step": 0.5,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 70,
+          "full": 85
+        }
+      },
+      "default": "high",
+      "subgroup": "differential"
+    },
+    "eos": {
+      "label": "Eosinophils",
+      "short": "Eos",
+      "category": "lab",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        1,
+        5
+      ],
+      "limits": [
+        0,
+        100
+      ],
+      "step": 0.5,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 5,
+          "full": 12
+        }
+      },
+      "default": "high",
+      "subgroup": "differential"
+    },
+    "bas": {
+      "label": "Basophils",
+      "short": "Bas",
+      "category": "lab",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        0,
+        1.5
+      ],
+      "limits": [
+        0,
+        100
+      ],
+      "step": 0.1,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 1.5,
+          "full": 3
+        }
+      },
+      "default": "high",
+      "subgroup": "differential"
+    },
+    "lym": {
+      "label": "Lymphocytes",
+      "short": "Lym",
+      "category": "lab",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        20,
+        45
+      ],
+      "limits": [
+        0,
+        100
+      ],
+      "step": 0.5,
+      "patterns": {
+        "low": {
+          "type": "below",
+          "from": 20,
+          "full": 10
+        }
+      },
+      "default": "low",
+      "subgroup": "differential"
+    },
+    "mon": {
+      "label": "Monocytes",
+      "short": "Mon",
+      "category": "lab",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        2,
+        8
+      ],
+      "limits": [
+        0,
+        100
+      ],
+      "step": 0.5,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 8,
+          "full": 15
+        }
+      },
+      "default": "high",
+      "subgroup": "differential"
+    },
+    "alt": {
+      "label": "Alanine aminotransferase",
+      "short": "ALT",
+      "category": "lab",
+      "input": "number",
+      "unit": "U/L",
+      "ref": [
+        5,
+        40
+      ],
+      "limits": [
+        0,
+        5000
+      ],
+      "step": 1,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 40,
+          "full": 100
+        }
+      },
+      "default": "high",
+      "subgroup": "chemistry"
+    },
+    "ast": {
+      "label": "Aspartate aminotransferase",
+      "short": "AST",
+      "category": "lab",
+      "input": "number",
+      "unit": "U/L",
+      "ref": [
+        10,
+        40
+      ],
+      "limits": [
+        0,
+        5000
+      ],
+      "step": 1,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 40,
+          "full": 100
+        }
+      },
+      "default": "high",
+      "subgroup": "chemistry"
+    },
+    "tp": {
+      "label": "Total protein",
+      "short": "TP",
+      "category": "lab",
+      "input": "number",
+      "unit": "g/dL",
+      "ref": [
+        6.5,
+        8.2
+      ],
+      "limits": [
+        2,
+        15
+      ],
+      "step": 0.1,
+      "patterns": {
+        "low": {
+          "type": "below",
+          "from": 6.5,
+          "full": 5.5
+        }
+      },
+      "default": "low",
+      "subgroup": "chemistry"
+    },
+    "ztt": {
+      "label": "Zinc sulfate turbidity test",
+      "short": "ZTT",
+      "category": "lab",
+      "input": "number",
+      "unit": "KU",
+      "ref": [
+        4,
+        12
+      ],
+      "limits": [
+        0,
+        80
+      ],
+      "step": 0.5,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 12,
+          "full": 20
+        },
+        "normal": {
+          "type": "below",
+          "from": 15,
+          "full": 12,
+          "exclusion": true
+        }
+      },
+      "default": "high",
+      "subgroup": "chemistry"
+    },
+    "glu": {
+      "label": "Blood glucose",
+      "short": "Glu",
+      "category": "lab",
+      "input": "number",
+      "unit": "mg/dL",
+      "ref": [
+        70,
+        109
+      ],
+      "limits": [
+        10,
+        1500
+      ],
+      "step": 1,
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 110,
+          "full": 200
+        }
+      },
+      "default": "high",
+      "subgroup": "chemistry"
+    },
+    "fev1": {
+      "label": "FEV1",
+      "short": "FEV1",
+      "category": "spirometry",
+      "input": "number",
+      "unit": "L",
+      "ref": null,
+      "ref_text": "depends on age, sex, height",
+      "limits": [
+        0.1,
+        9
+      ],
+      "step": 0.01,
+      "patterns": {
+        "low": {
+          "type": "below",
+          "from": 2.5,
+          "full": 1.5
+        }
+      },
+      "default": "low"
+    },
+    "fvc": {
+      "label": "FVC",
+      "short": "FVC",
+      "category": "spirometry",
+      "input": "number",
+      "unit": "L",
+      "ref": null,
+      "ref_text": "depends on age, sex, height",
+      "limits": [
+        0.1,
+        10
+      ],
+      "step": 0.01,
+      "patterns": {
+        "low": {
+          "type": "below",
+          "from": 3.0,
+          "full": 2.0
+        }
+      },
+      "default": "low"
+    },
+    "pfev1": {
+      "label": "%FEV1 (FEV1 % predicted)",
+      "short": "%FEV1",
+      "category": "spirometry",
+      "input": "number",
+      "unit": "% pred",
+      "ref": [
+        80,
+        150
+      ],
+      "limits": [
+        5,
+        200
+      ],
+      "step": 1,
+      "patterns": {
+        "low": {
+          "type": "below",
+          "from": 80,
+          "full": 50
+        },
+        "preserved": {
+          "type": "above",
+          "from": 50,
+          "full": 80,
+          "exclusion": true
+        }
+      },
+      "default": "low"
+    },
+    "fev1_fvc": {
+      "label": "FEV1/FVC",
+      "short": "FEV1/FVC",
+      "category": "spirometry",
+      "input": "number",
+      "unit": "%",
+      "ref": [
+        70,
+        100
+      ],
+      "limits": [
+        10,
+        100
+      ],
+      "step": 1,
+      "computed_from": [
+        "fev1",
+        "fvc"
+      ],
+      "patterns": {
+        "obstructive": {
+          "type": "below",
+          "from": 75,
+          "full": 65
+        },
+        "normal": {
+          "type": "above",
+          "from": 65,
+          "full": 75,
+          "exclusion": true
+        }
+      },
+      "default": "obstructive"
+    },
+    "xr_pneumonia": {
+      "label": "X-ray: Pneumonia",
+      "short": "Pneumonia",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Pneumonia",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_consolidation": {
+      "label": "X-ray: Consolidation",
+      "short": "Consolidation",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Consolidation",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_lung_opacity": {
+      "label": "X-ray: Lung Opacity",
+      "short": "Lung Opacity",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Lung Opacity",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_infiltration": {
+      "label": "X-ray: Infiltration",
+      "short": "Infiltration",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Infiltration",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_atelectasis": {
+      "label": "X-ray: Atelectasis",
+      "short": "Atelectasis",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Atelectasis",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_effusion": {
+      "label": "X-ray: Effusion",
+      "short": "Effusion",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Effusion",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_pleural_thickening": {
+      "label": "X-ray: Pleural Thickening",
+      "short": "Pleural Thickening",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Pleural_Thickening",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_emphysema": {
+      "label": "X-ray: Emphysema",
+      "short": "Emphysema",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Emphysema",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_fibrosis": {
+      "label": "X-ray: Fibrosis",
+      "short": "Fibrosis",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Fibrosis",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_mass": {
+      "label": "X-ray: Mass",
+      "short": "Mass",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Mass",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_lung_lesion": {
+      "label": "X-ray: Lung Lesion",
+      "short": "Lung Lesion",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Lung Lesion",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_nodule": {
+      "label": "X-ray: Nodule",
+      "short": "Nodule",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Nodule",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_pneumothorax": {
+      "label": "X-ray: Pneumothorax",
+      "short": "Pneumothorax",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Pneumothorax",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    },
+    "xr_edema": {
+      "label": "X-ray: Edema",
+      "short": "Edema",
+      "category": "xray",
+      "input": "xray",
+      "field": "xray:Edema",
+      "unit": "score",
+      "ref": [
+        0,
+        0.5
+      ],
+      "patterns": {
+        "high": {
+          "type": "above",
+          "from": 0.5,
+          "full": 0.75
+        },
+        "low": {
+          "type": "below",
+          "from": 0.6,
+          "full": 0.45,
+          "exclusion": true
+        }
+      },
+      "default": "high"
+    }
+  },
+  "diseases": {
+    "asthma": {
+      "name": "Asthma",
+      "icd10": "J45",
+      "summary": "Chronic airway inflammation with variable, reversible expiratory airflow limitation (GINA).",
+      "references": [
+        "GINA Global Strategy for Asthma Management and Prevention 2024",
+        "JGL Japanese Asthma Prevention and Management Guideline 2024"
+      ],
+      "follow_up": "Spirometry with bronchodilator reversibility (≥12 % and ≥200 mL), peak-flow variability, FeNO and blood eosinophils, allergy testing.",
+      "items": {
+        "fever": {
+          "group": "C",
+          "weight": 1.0,
+          "expect": "absent",
+          "why": "Asthma itself does not cause fever; fever points to an infection instead, so absence supports asthma."
+        },
+        "dyspnea": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "Variable shortness of breath, often at night or on exertion, is a core GINA symptom."
+        },
+        "wheezing": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Episodic wheeze is the hallmark symptom of asthma (GINA: wheeze, dyspnea, chest tightness, cough varying over time)."
+        },
+        "cough": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Cough is common and can be the only symptom (cough-variant asthma), but it is not specific."
+        },
+        "sputum": {
+          "group": "C",
+          "weight": 0.7,
+          "why": "Mucoid (eosinophilic) sputum is possible but less typical than in bronchitis."
+        },
+        "chest_pain": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Chest tightness is a GINA symptom; true pain is uncommon."
+        },
+        "exposure": {
+          "group": "C",
+          "weight": 0.6,
+          "sounds": {
+            "occupational": 1.0,
+            "passive": 0.6,
+            "pollution": 0.6,
+            "biomass": 0.4,
+            "smoking_current": 0.4
+          },
+          "why": "Occupational sensitizers cause occupational asthma; smoke and pollution trigger attacks."
+        },
+        "pack_years": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "light",
+          "why": "Heavy smoking (> 10–20 pack-years) with obstruction points to COPD rather than asthma (GINA / GOLD asthma–COPD overlap)."
+        },
+        "duration": {
+          "group": "B",
+          "weight": 2.0,
+          "sounds": {
+            "episodic": 1.0,
+            "acute": 0.5,
+            "chronic": 0.4,
+            "years": 0.4,
+            "subacute": 0.3
+          },
+          "why": "Symptoms vary over time and in intensity, with symptom-free intervals (GINA); an attack is acute."
+        },
+        "auscultation": {
+          "group": "A",
+          "weight": 3.0,
+          "sounds": {
+            "wheeze": 1.0,
+            "rhonchi": 0.5
+          },
+          "why": "Diffuse expiratory polyphonic wheeze with prolonged expiration; rhonchi may accompany it."
+        },
+        "bp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood pressure is not part of the diagnostic criteria; it only matters for sepsis / severity."
+        },
+        "pr": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Tachycardia accompanies exacerbations (GINA: > 120 /min = severe) and β2-agonist use."
+        },
+        "bt": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "afebrile",
+          "why": "Normal body temperature is expected; a high temperature favors an infectious diagnosis."
+        },
+        "rr": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Tachypnea in exacerbation (GINA: RR > 30 /min = severe)."
+        },
+        "gcs": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Drowsiness or confusion is a sign of life-threatening asthma (GINA), but rare."
+        },
+        "spo2": {
+          "group": "B",
+          "weight": 1.6,
+          "why": "Hypoxemia reflects exacerbation severity (GINA: SpO₂ < 90 % = severe)."
+        },
+        "wbc": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "not_high",
+          "why": "White cell count is usually normal; leukocytosis favors infection."
+        },
+        "esr": {
+          "group": "D",
+          "weight": 0,
+          "why": "ESR is non-specific and not used for this disease."
+        },
+        "stab": {
+          "group": "D",
+          "weight": 0,
+          "why": "A left shift points to acute bacterial infection, which is not part of this disease."
+        },
+        "seg": {
+          "group": "D",
+          "weight": 0,
+          "why": "Neutrophilia points to acute bacterial infection, which is not part of this disease."
+        },
+        "eos": {
+          "group": "B",
+          "weight": 2.4,
+          "why": "Blood eosinophilia marks type-2 airway inflammation (eosinophils ≥ 300/µL ≈ > 5 %), typical of allergic asthma."
+        },
+        "bas": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Basophils take part in allergic inflammation; a weak, non-specific marker."
+        },
+        "lym": {
+          "group": "D",
+          "weight": 0,
+          "why": "Lymphocyte count has no diagnostic role here."
+        },
+        "mon": {
+          "group": "D",
+          "weight": 0,
+          "why": "Monocyte count has no diagnostic role here."
+        },
+        "alt": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "ast": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "tp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Serum protein is not part of the work-up for this disease."
+        },
+        "ztt": {
+          "group": "D",
+          "weight": 0,
+          "why": "ZTT (γ-globulin) reflects chronic inflammation, which is not a feature of this disease."
+        },
+        "glu": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood glucose is not related to this disease."
+        },
+        "fev1": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Absolute FEV1 is reduced during obstruction, but it depends on age, sex and height."
+        },
+        "fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "pfev1": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "A low FEV1 % predicted shows obstruction and exacerbation risk; it can be normal between attacks, so B."
+        },
+        "fev1_fvc": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "GINA requires documented expiratory airflow limitation: a reduced FEV1/FVC (below ~0.75–0.80 in adults) when FEV1 is low."
+        },
+        "xr_pneumonia": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumonia' is not expected in this disease."
+        },
+        "xr_consolidation": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "low",
+          "why": "The chest X-ray in asthma is usually normal; consolidation argues for pneumonia instead."
+        },
+        "xr_lung_opacity": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Opacity' is not expected in this disease."
+        },
+        "xr_infiltration": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Infiltration' is not expected in this disease."
+        },
+        "xr_atelectasis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Atelectasis' is not expected in this disease."
+        },
+        "xr_effusion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Effusion' is not expected in this disease."
+        },
+        "xr_pleural_thickening": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pleural Thickening' is not expected in this disease."
+        },
+        "xr_emphysema": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Hyperinflation can appear on the X-ray during attacks; the model reports it as emphysema-like."
+        },
+        "xr_fibrosis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Fibrosis' is not expected in this disease."
+        },
+        "xr_mass": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Mass' is not expected in this disease."
+        },
+        "xr_lung_lesion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Lesion' is not expected in this disease."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "C",
+          "weight": 0.3,
+          "why": "Pneumothorax is a rare complication of severe asthma (barotrauma)."
+        },
+        "xr_edema": {
+          "group": "C",
+          "weight": 0.4,
+          "expect": "low",
+          "why": "Wheeze with pulmonary edema is 'cardiac asthma' (heart failure); edema on the X-ray argues against bronchial asthma."
+        }
+      },
+      "severity": {
+        "source": "GINA 2024 — severity of exacerbations (moderate / severe / life-threatening)",
+        "signs": [
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 95
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 90
+              }
+            ],
+            "why": "SpO₂ 90–95 % = moderate, < 90 % = severe exacerbation (GINA)."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 22
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Respiratory rate > 30 /min marks a severe exacerbation (GINA)."
+          },
+          {
+            "field": "pr",
+            "label": "Pulse rate",
+            "moderate": [
+              {
+                "above": 100
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 120
+              }
+            ],
+            "why": "Pulse 100–120 /min = moderate, > 120 /min = severe exacerbation (GINA)."
+          },
+          {
+            "field": "gcs",
+            "label": "Consciousness (GCS)",
+            "moderate": [
+              {
+                "below": 15
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 13
+              }
+            ],
+            "why": "Drowsiness or confusion is a life-threatening sign (GINA)."
+          },
+          {
+            "field": "pfev1",
+            "label": "%FEV1",
+            "moderate": [
+              {
+                "below": 80
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 50
+              }
+            ],
+            "why": "FEV1 / PEF ≤ 50 % of predicted = severe exacerbation (GINA)."
+          },
+          {
+            "field": "xray:Pneumothorax",
+            "label": "X-ray: pneumothorax",
+            "moderate": [],
+            "severe": [
+              {
+                "at_least": 0.5
+              }
+            ],
+            "why": "Pneumothorax (barotrauma) is a life-threatening complication of asthma."
+          }
+        ]
+      }
+    },
+    "copd": {
+      "name": "COPD",
+      "icd10": "J44",
+      "summary": "Persistent, progressive airflow limitation (post-bronchodilator FEV1/FVC < 0.70) from small-airway disease and emphysema (GOLD).",
+      "references": [
+        "GOLD Global Strategy for COPD 2025",
+        "JRS COPD Guideline 6th edition (2022)"
+      ],
+      "follow_up": "Post-bronchodilator spirometry (FEV1/FVC < 0.70 confirms), GOLD grade by %FEV1, arterial blood gas when SpO₂ is low, smoking history, chest CT for emphysema.",
+      "items": {
+        "fever": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "absent",
+          "why": "Stable COPD is afebrile; fever suggests pneumonia or infective exacerbation."
+        },
+        "dyspnea": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "Progressive, persistent exertional dyspnea is the cardinal symptom (GOLD; graded by mMRC)."
+        },
+        "wheezing": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "Wheeze occurs but varies; less specific than in asthma."
+        },
+        "cough": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Chronic cough is common and often the first symptom (GOLD)."
+        },
+        "sputum": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Regular sputum production is common (chronic bronchitis phenotype)."
+        },
+        "chest_pain": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Chest tightness can occur; pain is not typical."
+        },
+        "exposure": {
+          "group": "A",
+          "weight": 3.0,
+          "sounds": {
+            "smoking_current": 1.0,
+            "smoking_former": 0.9,
+            "occupational": 0.8,
+            "biomass": 0.8,
+            "pollution": 0.4,
+            "passive": 0.4
+          },
+          "why": "GOLD defines COPD as caused by exposure to noxious particles or gases: tobacco smoke (main cause), occupational dust / chemicals / fumes and biomass smoke (the main cause in never-smokers worldwide)."
+        },
+        "pack_years": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "Dose–response: COPD risk rises with cumulative smoking; ≥ 10–20 pack-years is the usual risk threshold (GOLD; COPD case-finding questionnaires)."
+        },
+        "duration": {
+          "group": "A",
+          "weight": 2.5,
+          "sounds": {
+            "years": 1.0,
+            "chronic": 0.8,
+            "episodic": 0.3,
+            "subacute": 0.2,
+            "acute": 0.1
+          },
+          "why": "COPD causes persistent, progressive symptoms over years (GOLD), with acute exacerbations."
+        },
+        "auscultation": {
+          "group": "B",
+          "weight": 2.0,
+          "sounds": {
+            "diminished": 1.0,
+            "rhonchi": 1.0,
+            "wheeze": 0.8,
+            "coarse_crackles": 0.5
+          },
+          "why": "Diminished breath sounds (hyperinflation), wheeze and rhonchi; coarse crackles in exacerbations."
+        },
+        "bp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood pressure is not part of the diagnostic criteria; it only matters for sepsis / severity."
+        },
+        "pr": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Tachycardia in exacerbations and with cor pulmonale."
+        },
+        "bt": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "afebrile",
+          "why": "Normal temperature is expected in stable COPD."
+        },
+        "rr": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Tachypnea in exacerbations and advanced disease."
+        },
+        "gcs": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Reduced consciousness suggests hypercapnic encephalopathy in a severe exacerbation."
+        },
+        "spo2": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Chronic hypoxemia in advanced disease and acute drops in exacerbations."
+        },
+        "wbc": {
+          "group": "D",
+          "weight": 0,
+          "why": "White cell count is usually normal and not diagnostic here."
+        },
+        "esr": {
+          "group": "D",
+          "weight": 0,
+          "why": "ESR is non-specific and not used for this disease."
+        },
+        "stab": {
+          "group": "D",
+          "weight": 0,
+          "why": "A left shift points to acute bacterial infection, which is not part of this disease."
+        },
+        "seg": {
+          "group": "D",
+          "weight": 0,
+          "why": "Neutrophilia points to acute bacterial infection, which is not part of this disease."
+        },
+        "eos": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Blood eosinophils ≥ 300/µL define the eosinophilic phenotype that responds to inhaled steroids (GOLD)."
+        },
+        "bas": {
+          "group": "D",
+          "weight": 0,
+          "why": "Basophils have no diagnostic role here."
+        },
+        "lym": {
+          "group": "D",
+          "weight": 0,
+          "why": "Lymphocyte count has no diagnostic role here."
+        },
+        "mon": {
+          "group": "D",
+          "weight": 0,
+          "why": "Monocyte count has no diagnostic role here."
+        },
+        "alt": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "ast": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "tp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Serum protein is not part of the work-up for this disease."
+        },
+        "ztt": {
+          "group": "D",
+          "weight": 0,
+          "why": "ZTT (γ-globulin) reflects chronic inflammation, which is not a feature of this disease."
+        },
+        "glu": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood glucose is not related to this disease."
+        },
+        "fev1": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Absolute FEV1 falls with severity (depends on age, sex and height)."
+        },
+        "fvc": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Air trapping lowers FVC in advanced disease."
+        },
+        "pfev1": {
+          "group": "A",
+          "weight": 2.6,
+          "why": "FEV1 % predicted sets the GOLD grade (1: ≥ 80, 2: 50–79, 3: 30–49, 4: < 30)."
+        },
+        "fev1_fvc": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Defining criterion: post-bronchodilator FEV1/FVC < 0.70 is required for the diagnosis (GOLD)."
+        },
+        "xr_pneumonia": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumonia' is not expected in this disease."
+        },
+        "xr_consolidation": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "low",
+          "why": "Consolidation is not a COPD finding and argues for pneumonia."
+        },
+        "xr_lung_opacity": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Opacity' is not expected in this disease."
+        },
+        "xr_infiltration": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Infiltration' is not expected in this disease."
+        },
+        "xr_atelectasis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Atelectasis' is not expected in this disease."
+        },
+        "xr_effusion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Effusion' is not expected in this disease."
+        },
+        "xr_pleural_thickening": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pleural Thickening' is not expected in this disease."
+        },
+        "xr_emphysema": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "Hyperinflation, flattened diaphragm and bullae are the radiographic signs of emphysema."
+        },
+        "xr_fibrosis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Fibrosis' is not expected in this disease."
+        },
+        "xr_mass": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Mass' is not expected in this disease."
+        },
+        "xr_lung_lesion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Lesion' is not expected in this disease."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Rupture of emphysematous bullae causes secondary spontaneous pneumothorax; COPD is its most common cause."
+        },
+        "xr_edema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Edema' is not expected in this disease."
+        }
+      },
+      "severity": {
+        "source": "GOLD 2025 — airflow-limitation grade and exacerbation severity (Rome proposal)",
+        "signs": [
+          {
+            "field": "pfev1",
+            "label": "%FEV1",
+            "moderate": [
+              {
+                "below": 80
+              }
+            ],
+            "severe": [
+              {
+                "below": 50
+              }
+            ],
+            "why": "%FEV1 grades airflow limitation: < 80 % moderate, < 50 % severe (GOLD 2 / GOLD 3–4)."
+          },
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 92
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 88
+              }
+            ],
+            "why": "SpO₂ < 92 % suggests respiratory failure; ≤ 88 % is below the GOLD target — severe hypoxemia."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 24
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Respiratory rate ≥ 24 /min is a moderate–severe exacerbation sign (GOLD / Rome)."
+          },
+          {
+            "field": "pr",
+            "label": "Pulse rate",
+            "moderate": [
+              {
+                "above": 95
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 120
+              }
+            ],
+            "why": "Heart rate ≥ 95 /min is an exacerbation severity sign (GOLD / Rome)."
+          },
+          {
+            "field": "gcs",
+            "label": "Consciousness (GCS)",
+            "moderate": [
+              {
+                "below": 15
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 13
+              }
+            ],
+            "why": "Confusion or drowsiness suggests hypercapnic encephalopathy — severe (GOLD)."
+          },
+          {
+            "field": "xray:Pneumothorax",
+            "label": "X-ray: pneumothorax",
+            "moderate": [],
+            "severe": [
+              {
+                "at_least": 0.5
+              }
+            ],
+            "why": "Bulla rupture — secondary pneumothorax is life-threatening in COPD."
+          }
+        ]
+      }
+    },
+    "pneumonia": {
+      "name": "Pneumonia",
+      "icd10": "J18",
+      "summary": "Acute infection of the lung parenchyma: acute respiratory symptoms plus a new infiltrate on imaging (ATS/IDSA).",
+      "references": [
+        "ATS/IDSA Community-Acquired Pneumonia Guideline 2019",
+        "BTS CURB-65 severity score (Lim et al., Thorax 2003)",
+        "JRS Adult Pneumonia Guideline 2024 (A-DROP)"
+      ],
+      "follow_up": "CRP / procalcitonin, sputum Gram stain and culture, blood cultures, urinary antigens; score severity with CURB-65 or A-DROP (add age and BUN).",
+      "items": {
+        "fever": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "Fever / chills is one of the main presenting symptoms of acute lung infection."
+        },
+        "dyspnea": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Dyspnea is common and grows with severity."
+        },
+        "wheezing": {
+          "group": "D",
+          "weight": 0,
+          "why": "Wheeze is not a feature of pneumonia (it points to airway disease)."
+        },
+        "cough": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "Acute cough is present in most patients."
+        },
+        "sputum": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Purulent sputum is typical of bacterial pneumonia; atypical pneumonia is often dry."
+        },
+        "chest_pain": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Pleuritic chest pain when the infection reaches the pleura."
+        },
+        "exposure": {
+          "group": "C",
+          "weight": 0.4,
+          "sounds": {
+            "smoking_current": 1.0,
+            "smoking_former": 0.5,
+            "biomass": 0.4
+          },
+          "why": "Smoking is a risk factor for pneumonia (impaired mucociliary clearance)."
+        },
+        "pack_years": {
+          "group": "D",
+          "weight": 0,
+          "why": "Pack-years add nothing beyond current smoking for pneumonia risk."
+        },
+        "duration": {
+          "group": "A",
+          "weight": 2.5,
+          "sounds": {
+            "acute": 1.0,
+            "subacute": 0.4,
+            "episodic": 0.2
+          },
+          "why": "Community-acquired pneumonia has an acute onset over days (ATS/IDSA)."
+        },
+        "auscultation": {
+          "group": "A",
+          "weight": 3.0,
+          "sounds": {
+            "coarse_crackles": 1.0,
+            "bronchial": 1.0,
+            "fine_crackles": 0.8,
+            "diminished": 0.4
+          },
+          "why": "Localized crackles and bronchial breathing over the consolidated area; reduced sounds with effusion."
+        },
+        "bp": {
+          "group": "C",
+          "weight": 1.2,
+          "expect": "hypotension",
+          "why": "Hypotension (SBP < 90 or DBP ≤ 60) is a CURB-65 severity criterion."
+        },
+        "pr": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Tachycardia accompanies fever and sepsis."
+        },
+        "bt": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "Measured temperature ≥ 38 °C supports an infectious cause."
+        },
+        "rr": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Tachypnea is an early sign; RR ≥ 30 /min is a CURB-65 criterion."
+        },
+        "gcs": {
+          "group": "C",
+          "weight": 1.2,
+          "why": "New confusion is a CURB-65 severity criterion."
+        },
+        "spo2": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Hypoxemia marks severity (A-DROP: SpO₂ ≤ 90 %)."
+        },
+        "wbc": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "Leukocytosis (> 10 ×10³/µL) supports bacterial pneumonia."
+        },
+        "esr": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "ESR rises with acute inflammation, but slowly and non-specifically."
+        },
+        "stab": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "A left shift (more band neutrophils) indicates acute bacterial infection."
+        },
+        "seg": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "Neutrophilia indicates bacterial infection."
+        },
+        "eos": {
+          "group": "D",
+          "weight": 0,
+          "why": "Eosinophils are not a feature of this disease."
+        },
+        "bas": {
+          "group": "D",
+          "weight": 0,
+          "why": "Basophils have no diagnostic role here."
+        },
+        "lym": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Lymphopenia accompanies bacterial infection and predicts severity."
+        },
+        "mon": {
+          "group": "D",
+          "weight": 0,
+          "why": "Monocyte count has no diagnostic role here."
+        },
+        "alt": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Raised liver enzymes are seen in Legionella / Mycoplasma pneumonia and in sepsis."
+        },
+        "ast": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Raised liver enzymes are seen in Legionella / Mycoplasma pneumonia and in sepsis."
+        },
+        "tp": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Low protein (malnutrition) is a risk factor and marks severity."
+        },
+        "ztt": {
+          "group": "D",
+          "weight": 0,
+          "why": "ZTT (γ-globulin) reflects chronic inflammation, which is not a feature of this disease."
+        },
+        "glu": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "Diabetes is a risk factor, and stress hyperglycemia accompanies severe infection."
+        },
+        "fev1": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "pfev1": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "fev1_fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "xr_pneumonia": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "A new infiltrate on the chest X-ray is required for the diagnosis (ATS/IDSA). The four X-ray labels Pneumonia, Consolidation, Lung Opacity and Infiltration are correlated readings of this one criterion, so only this one is in group A; counting all four as A would weigh the same evidence several times and let one label the model misses veto the diagnosis."
+        },
+        "xr_consolidation": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Lobar or segmental consolidation is the classic radiographic pattern (correlated with the Pneumonia label)."
+        },
+        "xr_lung_opacity": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Lung opacity is the broader radiographic sign of an infiltrate (correlated with the Pneumonia label)."
+        },
+        "xr_infiltration": {
+          "group": "C",
+          "weight": 1.2,
+          "why": "Infiltration on the X-ray supports a parenchymal process (correlated with the Pneumonia label)."
+        },
+        "xr_atelectasis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Atelectasis' is not expected in this disease."
+        },
+        "xr_effusion": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "A parapneumonic effusion can accompany pneumonia."
+        },
+        "xr_pleural_thickening": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pleural Thickening' is not expected in this disease."
+        },
+        "xr_emphysema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Emphysema' is not expected in this disease."
+        },
+        "xr_fibrosis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Fibrosis' is not expected in this disease."
+        },
+        "xr_mass": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Mass' is not expected in this disease."
+        },
+        "xr_lung_lesion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Lesion' is not expected in this disease."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumothorax' is not expected in this disease."
+        },
+        "xr_edema": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "low",
+          "why": "Pulmonary edema (heart failure) is the main radiographic mimic of pneumonia; an edema pattern makes an infectious infiltrate less likely."
+        }
+      },
+      "severity": {
+        "source": "CURB-65 (BTS), A-DROP (JRS) and ATS/IDSA minor severity criteria",
+        "signs": [
+          {
+            "field": "gcs",
+            "label": "Consciousness (GCS)",
+            "moderate": [
+              {
+                "below": 15
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 13
+              }
+            ],
+            "why": "Altered consciousness: GCS 14 (qSOFA); ≤ 13 = confusion / drowsiness, a CURB-65 and GINA life-threatening sign."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 22
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Respiratory rate ≥ 22 /min is a qSOFA sign; ≥ 30 /min is a CURB-65 / GINA severity criterion."
+          },
+          {
+            "field": "bp",
+            "label": "Blood pressure",
+            "moderate": [
+              {
+                "field": "sbp",
+                "at_most": 100
+              }
+            ],
+            "severe": [
+              {
+                "field": "sbp",
+                "below": 90
+              },
+              {
+                "field": "dbp",
+                "at_most": 60
+              }
+            ],
+            "why": "Hypotension: systolic ≤ 100 mmHg is a qSOFA sign; systolic < 90 or diastolic ≤ 60 mmHg is a CURB-65 criterion."
+          },
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 94
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 90
+              }
+            ],
+            "why": "Hypoxemia: SpO₂ < 94 % is below the BTS oxygen target; ≤ 90 % is a severity criterion (A-DROP, GINA)."
+          },
+          {
+            "field": "bt",
+            "label": "Temperature",
+            "moderate": [
+              {
+                "at_least": 38.0
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 39.5
+              },
+              {
+                "below": 36.0
+              }
+            ],
+            "why": "Fever ≥ 38 °C; ≥ 39.5 °C or hypothermia < 36 °C marks a severe systemic response (SIRS, ATS/IDSA)."
+          },
+          {
+            "field": "wbc",
+            "label": "White blood cells",
+            "moderate": [
+              {
+                "at_least": 12
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 20
+              },
+              {
+                "below": 4
+              }
+            ],
+            "why": "Leukocytosis ≥ 12 ×10³/µL (SIRS); ≥ 20 or leukopenia < 4 is a severity criterion (ATS/IDSA minor criterion)."
+          },
+          {
+            "field": "stab",
+            "label": "Band neutrophils",
+            "moderate": [
+              {
+                "above": 10
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 20
+              }
+            ],
+            "why": "Bands > 10 % is a SIRS criterion; ≥ 20 % marks a strong left shift."
+          },
+          {
+            "field": "lym",
+            "label": "Lymphocytes",
+            "moderate": [
+              {
+                "below": 10
+              }
+            ],
+            "severe": [
+              {
+                "below": 5
+              }
+            ],
+            "why": "Marked lymphopenia predicts severe community-acquired pneumonia."
+          },
+          {
+            "field": "xray:Effusion",
+            "label": "X-ray: effusion",
+            "moderate": [
+              {
+                "at_least": 0.5
+              }
+            ],
+            "severe": [],
+            "why": "A parapneumonic effusion makes pneumonia complicated (drainage may be needed)."
+          }
+        ]
+      }
+    },
+    "pleurisy": {
+      "name": "Pleurisy",
+      "icd10": "R09.1 / J90",
+      "summary": "Inflammation of the pleura, often with pleural effusion: sharp pleuritic chest pain that worsens on inspiration.",
+      "references": [
+        "BTS Pleural Disease Guideline 2023",
+        "Light RW. Pleural Diseases, 6th ed. (Light's criteria)"
+      ],
+      "follow_up": "Chest ultrasound, diagnostic thoracentesis (Light's criteria, pleural fluid ADA for TB, cytology, culture), CRP, rule out pulmonary embolism.",
+      "items": {
+        "fever": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Infectious (viral, bacterial, tuberculous) pleurisy is febrile."
+        },
+        "dyspnea": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Shallow, painful breathing and a large effusion cause dyspnea."
+        },
+        "wheezing": {
+          "group": "D",
+          "weight": 0,
+          "why": "Wheeze is an airway sign and not part of pleural disease."
+        },
+        "cough": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "A dry cough from pleural irritation is possible."
+        },
+        "sputum": {
+          "group": "D",
+          "weight": 0,
+          "why": "The pleura produces no sputum; sputum points to airway or parenchymal disease."
+        },
+        "chest_pain": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Sharp pleuritic pain that worsens on breathing or coughing is the defining symptom."
+        },
+        "exposure": {
+          "group": "C",
+          "weight": 0.4,
+          "sounds": {
+            "occupational": 1.0
+          },
+          "why": "Asbestos (occupational) exposure causes benign asbestos pleural effusion and pleural plaques."
+        },
+        "pack_years": {
+          "group": "D",
+          "weight": 0,
+          "why": "Smoking is not a cause of pleurisy."
+        },
+        "duration": {
+          "group": "B",
+          "weight": 2.0,
+          "sounds": {
+            "acute": 1.0,
+            "subacute": 0.6
+          },
+          "why": "Pleuritic pain usually starts acutely; tuberculous pleurisy is subacute (BTS)."
+        },
+        "auscultation": {
+          "group": "A",
+          "weight": 3.0,
+          "sounds": {
+            "friction_rub": 1.0,
+            "diminished": 0.8,
+            "bronchial": 0.3
+          },
+          "why": "Pleural friction rub is pathognomonic; diminished breath sounds over an effusion."
+        },
+        "bp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood pressure is not part of the diagnostic criteria; it only matters for sepsis / severity."
+        },
+        "pr": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Tachycardia with fever or pain."
+        },
+        "bt": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Measured fever supports an infectious cause."
+        },
+        "rr": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Rapid shallow breathing (splinting) because deep breaths hurt."
+        },
+        "gcs": {
+          "group": "D",
+          "weight": 0,
+          "why": "Consciousness is not affected by this disease."
+        },
+        "spo2": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "SpO₂ falls only with a large effusion."
+        },
+        "wbc": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Leukocytosis suggests bacterial infection or empyema."
+        },
+        "esr": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "ESR is raised in inflammatory, tuberculous and autoimmune pleurisy."
+        },
+        "stab": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "A left shift in bacterial pleurisy / empyema."
+        },
+        "seg": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Neutrophilia in bacterial pleurisy / empyema."
+        },
+        "eos": {
+          "group": "D",
+          "weight": 0,
+          "why": "Eosinophilic effusions are diagnosed in pleural fluid, not blood."
+        },
+        "bas": {
+          "group": "D",
+          "weight": 0,
+          "why": "Basophils have no diagnostic role here."
+        },
+        "lym": {
+          "group": "D",
+          "weight": 0,
+          "why": "Lymphocyte count has no diagnostic role here."
+        },
+        "mon": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "Monocytosis can accompany tuberculous pleurisy."
+        },
+        "alt": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "ast": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "tp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Serum protein matters only together with pleural fluid protein (Light's criteria: ratio > 0.5 = exudate); fluid is not an input."
+        },
+        "ztt": {
+          "group": "D",
+          "weight": 0,
+          "why": "ZTT (γ-globulin) reflects chronic inflammation, which is not a feature of this disease."
+        },
+        "glu": {
+          "group": "D",
+          "weight": 0,
+          "why": "Low glucose is a pleural fluid finding (empyema, rheumatoid); blood glucose has no diagnostic value."
+        },
+        "fev1": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "fvc": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Restrictive pattern (low FVC with a normal FEV1/FVC) from effusion or pain."
+        },
+        "pfev1": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "%FEV1 falls with restriction."
+        },
+        "fev1_fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "The FEV1/FVC ratio stays normal in pleural (restrictive) disease."
+        },
+        "xr_pneumonia": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumonia' is not expected in this disease."
+        },
+        "xr_consolidation": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Consolidation' is not expected in this disease."
+        },
+        "xr_lung_opacity": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Opacity' is not expected in this disease."
+        },
+        "xr_infiltration": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Infiltration' is not expected in this disease."
+        },
+        "xr_atelectasis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Atelectasis' is not expected in this disease."
+        },
+        "xr_effusion": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "Pleural effusion (blunted costophrenic angle) is the main radiographic finding."
+        },
+        "xr_pleural_thickening": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "Pleural thickening reflects pleural inflammation (also in dry pleurisy)."
+        },
+        "xr_emphysema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Emphysema' is not expected in this disease."
+        },
+        "xr_fibrosis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Fibrosis' is not expected in this disease."
+        },
+        "xr_mass": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Mass' is not expected in this disease."
+        },
+        "xr_lung_lesion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Lesion' is not expected in this disease."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "D",
+          "weight": 0,
+          "why": "Pneumothorax also causes pleuritic pain, but it is a different disease, not a sign of pleurisy."
+        },
+        "xr_edema": {
+          "group": "C",
+          "weight": 0.5,
+          "expect": "low",
+          "why": "Effusion together with pulmonary edema suggests a transudate from heart failure rather than pleural inflammation (Light's criteria)."
+        }
+      },
+      "severity": {
+        "source": "BTS Pleural Disease Guideline 2023 (large effusion, empyema, sepsis)",
+        "signs": [
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 94
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 90
+              }
+            ],
+            "why": "Hypoxemia: SpO₂ < 94 % is below the BTS oxygen target; ≤ 90 % is a severity criterion (A-DROP, GINA)."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 22
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Respiratory rate ≥ 22 /min is a qSOFA sign; ≥ 30 /min is a CURB-65 / GINA severity criterion."
+          },
+          {
+            "field": "bt",
+            "label": "Temperature",
+            "moderate": [
+              {
+                "at_least": 38.0
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 39.5
+              },
+              {
+                "below": 36.0
+              }
+            ],
+            "why": "Fever ≥ 38 °C; ≥ 39.5 °C or hypothermia < 36 °C marks a severe systemic response (SIRS, ATS/IDSA)."
+          },
+          {
+            "field": "wbc",
+            "label": "White blood cells",
+            "moderate": [
+              {
+                "at_least": 12
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 20
+              },
+              {
+                "below": 4
+              }
+            ],
+            "why": "Leukocytosis suggests bacterial pleurisy; ≥ 20 ×10³/µL suggests empyema."
+          },
+          {
+            "field": "pr",
+            "label": "Pulse rate",
+            "moderate": [
+              {
+                "above": 100
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 120
+              }
+            ],
+            "why": "Tachycardia > 100 /min; ≥ 120 /min is a severity sign (GINA, sepsis)."
+          },
+          {
+            "field": "bp",
+            "label": "Blood pressure",
+            "moderate": [
+              {
+                "field": "sbp",
+                "at_most": 100
+              }
+            ],
+            "severe": [
+              {
+                "field": "sbp",
+                "below": 90
+              },
+              {
+                "field": "dbp",
+                "at_most": 60
+              }
+            ],
+            "why": "Hypotension: systolic ≤ 100 mmHg is a qSOFA sign; systolic < 90 or diastolic ≤ 60 mmHg is a CURB-65 criterion."
+          }
+        ]
+      }
+    },
+    "chronic_bronchitis": {
+      "name": "Chronic Bronchitis",
+      "icd10": "J41–J42",
+      "summary": "Productive cough on most days for ≥ 3 months in each of 2 consecutive years, other causes excluded (clinical definition).",
+      "references": [
+        "MRC / ATS clinical definition of chronic bronchitis",
+        "GOLD 2025 (chronic bronchitis phenotype of COPD)"
+      ],
+      "follow_up": "Smoking / occupational history, spirometry (obstruction = COPD), sputum culture in exacerbations; chest CT if bronchiectasis is suspected.",
+      "items": {
+        "fever": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "absent",
+          "why": "The chronic course is afebrile; fever indicates an acute infection."
+        },
+        "dyspnea": {
+          "group": "C",
+          "weight": 1.2,
+          "why": "Dyspnea is mild in simple chronic bronchitis; marked dyspnea suggests COPD."
+        },
+        "wheezing": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Wheeze from mucus in the airways."
+        },
+        "cough": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Chronic cough (≥ 3 months for 2 years) is part of the definition."
+        },
+        "sputum": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Chronic sputum production is part of the definition."
+        },
+        "chest_pain": {
+          "group": "D",
+          "weight": 0,
+          "why": "Chest pain is not a feature of chronic bronchitis."
+        },
+        "exposure": {
+          "group": "A",
+          "weight": 2.5,
+          "sounds": {
+            "smoking_current": 1.0,
+            "smoking_former": 0.8,
+            "occupational": 0.8,
+            "biomass": 0.6,
+            "pollution": 0.3,
+            "passive": 0.3
+          },
+          "why": "Smoking is the main cause; occupational dust and fumes cause 'industrial bronchitis'."
+        },
+        "pack_years": {
+          "group": "B",
+          "weight": 1.6,
+          "why": "Mucus hypersecretion increases with pack-years."
+        },
+        "duration": {
+          "group": "A",
+          "weight": 3.0,
+          "sounds": {
+            "years": 1.0,
+            "chronic": 0.7,
+            "episodic": 0.2
+          },
+          "why": "Definition: productive cough on most days for ≥ 3 months in each of 2 consecutive years."
+        },
+        "auscultation": {
+          "group": "B",
+          "weight": 2.0,
+          "sounds": {
+            "rhonchi": 1.0,
+            "coarse_crackles": 0.5,
+            "wheeze": 0.6
+          },
+          "why": "Rhonchi from secretions in the large airways; coarse crackles and wheeze are possible."
+        },
+        "bp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood pressure is not part of the diagnostic criteria; it only matters for sepsis / severity."
+        },
+        "pr": {
+          "group": "D",
+          "weight": 0,
+          "why": "Heart rate is non-specific for this disease."
+        },
+        "bt": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "afebrile",
+          "why": "Normal temperature is expected."
+        },
+        "rr": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Tachypnea in exacerbations."
+        },
+        "gcs": {
+          "group": "D",
+          "weight": 0,
+          "why": "Consciousness is not affected by this disease."
+        },
+        "spo2": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Hypoxemia only in advanced disease (the 'blue bloater' type)."
+        },
+        "wbc": {
+          "group": "C",
+          "weight": 0.4,
+          "expect": "not_high",
+          "why": "White count is usually normal; leukocytosis suggests acute infection."
+        },
+        "esr": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "normal",
+          "why": "Systemic inflammation is low in stable chronic bronchitis; a raised ESR suggests bronchiectasis, abscess or another chronic infection."
+        },
+        "stab": {
+          "group": "D",
+          "weight": 0,
+          "why": "A left shift points to acute bacterial infection, which is not part of this disease."
+        },
+        "seg": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Mild neutrophilia in infective exacerbations."
+        },
+        "eos": {
+          "group": "D",
+          "weight": 0,
+          "why": "Eosinophils are not a feature of this disease."
+        },
+        "bas": {
+          "group": "D",
+          "weight": 0,
+          "why": "Basophils have no diagnostic role here."
+        },
+        "lym": {
+          "group": "D",
+          "weight": 0,
+          "why": "Lymphocyte count has no diagnostic role here."
+        },
+        "mon": {
+          "group": "D",
+          "weight": 0,
+          "why": "Monocyte count has no diagnostic role here."
+        },
+        "alt": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "ast": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "tp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Serum protein is not part of the work-up for this disease."
+        },
+        "ztt": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "normal",
+          "why": "No hypergammaglobulinemia in simple chronic bronchitis; a raised ZTT suggests chronic suppurative disease such as bronchiectasis."
+        },
+        "glu": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood glucose is not related to this disease."
+        },
+        "fev1": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "pfev1": {
+          "group": "C",
+          "weight": 1.0,
+          "expect": "preserved",
+          "why": "%FEV1 stays near normal in simple chronic bronchitis; a low value points to COPD."
+        },
+        "fev1_fvc": {
+          "group": "C",
+          "weight": 1.2,
+          "expect": "normal",
+          "why": "Simple chronic bronchitis keeps a normal FEV1/FVC (Fletcher & Peto 1977); with persistent obstruction (< 0.70) the patient is classified as COPD (GOLD), so a normal ratio supports this diagnosis."
+        },
+        "xr_pneumonia": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumonia' is not expected in this disease."
+        },
+        "xr_consolidation": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "low",
+          "why": "The X-ray is usually normal; consolidation argues for pneumonia."
+        },
+        "xr_lung_opacity": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Opacity' is not expected in this disease."
+        },
+        "xr_infiltration": {
+          "group": "C",
+          "weight": 0.6,
+          "expect": "low",
+          "why": "The X-ray is usually normal; tram-line / ring shadows suggest bronchiectasis."
+        },
+        "xr_atelectasis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Atelectasis' is not expected in this disease."
+        },
+        "xr_effusion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Effusion' is not expected in this disease."
+        },
+        "xr_pleural_thickening": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pleural Thickening' is not expected in this disease."
+        },
+        "xr_emphysema": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "low",
+          "why": "Pure chronic bronchitis has no emphysema; emphysema on the X-ray points to COPD."
+        },
+        "xr_fibrosis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Fibrosis' is not expected in this disease."
+        },
+        "xr_mass": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Mass' is not expected in this disease."
+        },
+        "xr_lung_lesion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Lesion' is not expected in this disease."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumothorax' is not expected in this disease."
+        },
+        "xr_edema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Edema' is not expected in this disease."
+        }
+      },
+      "severity": {
+        "source": "GOLD 2025 exacerbation signs; obstruction grade",
+        "signs": [
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 92
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 88
+              }
+            ],
+            "why": "Hypoxemia in an exacerbation or advanced disease."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 24
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Tachypnea in an exacerbation."
+          },
+          {
+            "field": "bt",
+            "label": "Temperature",
+            "moderate": [
+              {
+                "at_least": 38.0
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 39.5
+              },
+              {
+                "below": 36.0
+              }
+            ],
+            "why": "Fever indicates an infective exacerbation."
+          },
+          {
+            "field": "pfev1",
+            "label": "%FEV1",
+            "moderate": [
+              {
+                "below": 80
+              }
+            ],
+            "severe": [
+              {
+                "below": 50
+              }
+            ],
+            "why": "A low %FEV1 means obstruction has developed (then classified as COPD)."
+          }
+        ]
+      }
+    },
+    "lung_abscess": {
+      "name": "Lung Abscess",
+      "icd10": "J85",
+      "summary": "Necrotizing infection forming a pus-filled lung cavity, usually after aspiration; subacute fever and copious foul sputum.",
+      "references": [
+        "Kuhajda I et al. Lung abscess – etiology, diagnostic and treatment options. Ann Transl Med 2015",
+        "Harrison's Principles of Internal Medicine, 21st ed. (lung abscess)"
+      ],
+      "follow_up": "Chest CT (cavity with air-fluid level), sputum and blood cultures incl. anaerobes, check for aspiration risk (alcohol, dysphagia, dental status), bronchoscopy if obstruction or tumor is suspected.",
+      "items": {
+        "fever": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "High, swinging fever with night sweats in the subacute course."
+        },
+        "dyspnea": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Dyspnea is less prominent than in pneumonia."
+        },
+        "wheezing": {
+          "group": "D",
+          "weight": 0,
+          "why": "Wheeze is an airway sign and not part of a lung abscess."
+        },
+        "cough": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Cough is present in nearly all patients."
+        },
+        "sputum": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Copious, purulent, often foul-smelling (anaerobic) sputum is characteristic."
+        },
+        "chest_pain": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Pleuritic pain when the abscess is near the pleura."
+        },
+        "exposure": {
+          "group": "D",
+          "weight": 0,
+          "why": "The risk factors of lung abscess are aspiration, alcohol and poor dentition, not inhaled exposures."
+        },
+        "pack_years": {
+          "group": "D",
+          "weight": 0,
+          "why": "Smoking is not a specific risk factor for lung abscess."
+        },
+        "duration": {
+          "group": "B",
+          "weight": 2.0,
+          "sounds": {
+            "subacute": 1.0,
+            "acute": 0.6,
+            "chronic": 0.4
+          },
+          "why": "Lung abscess usually has an indolent, subacute course of 1–2 weeks or more (anaerobic aspiration)."
+        },
+        "auscultation": {
+          "group": "C",
+          "weight": 1.2,
+          "sounds": {
+            "coarse_crackles": 1.0,
+            "bronchial": 0.8,
+            "diminished": 0.5
+          },
+          "why": "Coarse crackles, bronchial (amphoric) breathing over a cavity, reduced sounds."
+        },
+        "bp": {
+          "group": "C",
+          "weight": 0.8,
+          "expect": "hypotension",
+          "why": "Hypotension when sepsis develops."
+        },
+        "pr": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Tachycardia with fever."
+        },
+        "bt": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "Measured high fever."
+        },
+        "rr": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Tachypnea with fever and extensive disease."
+        },
+        "gcs": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Impaired consciousness (alcohol, seizures, stroke) leads to aspiration, the main cause."
+        },
+        "spo2": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Hypoxemia is uncommon unless disease is extensive."
+        },
+        "wbc": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "Marked leukocytosis is typical."
+        },
+        "esr": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "ESR is strongly raised in abscess formation."
+        },
+        "stab": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "A left shift with bacterial infection."
+        },
+        "seg": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "Neutrophilia with bacterial infection."
+        },
+        "eos": {
+          "group": "D",
+          "weight": 0,
+          "why": "Eosinophils are not a feature of this disease."
+        },
+        "bas": {
+          "group": "D",
+          "weight": 0,
+          "why": "Basophils have no diagnostic role here."
+        },
+        "lym": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "Relative lymphopenia with bacterial infection."
+        },
+        "mon": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "Monocytosis in a prolonged infection."
+        },
+        "alt": {
+          "group": "C",
+          "weight": 0.3,
+          "why": "Liver enzymes are only indirectly related (alcohol)."
+        },
+        "ast": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "AST > ALT suggests alcohol use, a risk factor for aspiration."
+        },
+        "tp": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Low protein reflects malnutrition and alcoholism (risk factors) and chronic suppuration."
+        },
+        "ztt": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "ZTT rises with γ-globulins in a prolonged infection."
+        },
+        "glu": {
+          "group": "C",
+          "weight": 1.2,
+          "why": "Diabetes is a major risk factor (e.g., Klebsiella abscess)."
+        },
+        "fev1": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "pfev1": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "fev1_fvc": {
+          "group": "D",
+          "weight": 0,
+          "why": "Spirometry is not used to diagnose this disease."
+        },
+        "xr_pneumonia": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumonia' is not expected in this disease."
+        },
+        "xr_consolidation": {
+          "group": "B",
+          "weight": 2.0,
+          "why": "Surrounding consolidation (pneumonitis) around the cavity."
+        },
+        "xr_lung_opacity": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Opacity around the lesion."
+        },
+        "xr_infiltration": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Infiltration' is not expected in this disease."
+        },
+        "xr_atelectasis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Atelectasis' is not expected in this disease."
+        },
+        "xr_effusion": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Effusion / empyema when the abscess reaches the pleura."
+        },
+        "xr_pleural_thickening": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pleural Thickening' is not expected in this disease."
+        },
+        "xr_emphysema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Emphysema' is not expected in this disease."
+        },
+        "xr_fibrosis": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Fibrosis' is not expected in this disease."
+        },
+        "xr_mass": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "A round, mass-like opacity (cavity with an air-fluid level) is the radiographic finding; the model has no 'cavity' label, so 'Mass' is the closest proxy."
+        },
+        "xr_lung_lesion": {
+          "group": "A",
+          "weight": 2.5,
+          "why": "A focal lung lesion is the radiographic proxy for the abscess cavity."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Rupture of a peripheral abscess into the pleural space causes pyopneumothorax."
+        },
+        "xr_edema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Edema' is not expected in this disease."
+        }
+      },
+      "severity": {
+        "source": "Sepsis criteria (qSOFA / SIRS) and complications of lung abscess",
+        "signs": [
+          {
+            "field": "bt",
+            "label": "Temperature",
+            "moderate": [
+              {
+                "at_least": 38.0
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 39.5
+              },
+              {
+                "below": 36.0
+              }
+            ],
+            "why": "Fever ≥ 38 °C; ≥ 39.5 °C or hypothermia < 36 °C marks a severe systemic response (SIRS, ATS/IDSA)."
+          },
+          {
+            "field": "wbc",
+            "label": "White blood cells",
+            "moderate": [
+              {
+                "at_least": 12
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 20
+              },
+              {
+                "below": 4
+              }
+            ],
+            "why": "Leukocytosis ≥ 12 ×10³/µL (SIRS); ≥ 20 or leukopenia < 4 is a severity criterion (ATS/IDSA minor criterion)."
+          },
+          {
+            "field": "bp",
+            "label": "Blood pressure",
+            "moderate": [
+              {
+                "field": "sbp",
+                "at_most": 100
+              }
+            ],
+            "severe": [
+              {
+                "field": "sbp",
+                "below": 90
+              },
+              {
+                "field": "dbp",
+                "at_most": 60
+              }
+            ],
+            "why": "Hypotension: systolic ≤ 100 mmHg is a qSOFA sign; systolic < 90 or diastolic ≤ 60 mmHg is a CURB-65 criterion."
+          },
+          {
+            "field": "pr",
+            "label": "Pulse rate",
+            "moderate": [
+              {
+                "above": 100
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 120
+              }
+            ],
+            "why": "Tachycardia > 100 /min; ≥ 120 /min is a severity sign (GINA, sepsis)."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 22
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Respiratory rate ≥ 22 /min is a qSOFA sign; ≥ 30 /min is a CURB-65 / GINA severity criterion."
+          },
+          {
+            "field": "gcs",
+            "label": "Consciousness (GCS)",
+            "moderate": [
+              {
+                "below": 15
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 13
+              }
+            ],
+            "why": "Altered consciousness: GCS 14 (qSOFA); ≤ 13 = confusion / drowsiness, a CURB-65 and GINA life-threatening sign."
+          },
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 94
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 90
+              }
+            ],
+            "why": "Hypoxemia: SpO₂ < 94 % is below the BTS oxygen target; ≤ 90 % is a severity criterion (A-DROP, GINA)."
+          },
+          {
+            "field": "tp",
+            "label": "Total protein",
+            "moderate": [
+              {
+                "below": 6.0
+              }
+            ],
+            "severe": [
+              {
+                "below": 5.5
+              }
+            ],
+            "why": "Hypoproteinemia (malnutrition, chronic suppuration) predicts a poor outcome."
+          },
+          {
+            "field": "xray:Effusion",
+            "label": "X-ray: effusion",
+            "moderate": [
+              {
+                "at_least": 0.5
+              }
+            ],
+            "severe": [],
+            "why": "Effusion suggests extension to the pleura (empyema)."
+          },
+          {
+            "field": "xray:Pneumothorax",
+            "label": "X-ray: pneumothorax",
+            "moderate": [],
+            "severe": [
+              {
+                "at_least": 0.5
+              }
+            ],
+            "why": "Rupture into the pleural space (pyopneumothorax)."
+          }
+        ]
+      }
+    },
+    "bronchiectasis": {
+      "name": "Bronchiectasis",
+      "icd10": "J47",
+      "summary": "Permanent bronchial dilation with chronic productive cough and recurrent infections (vicious cycle of infection and inflammation).",
+      "references": [
+        "BTS Guideline for Bronchiectasis in Adults 2019",
+        "ERS Guidelines for the Management of Adult Bronchiectasis 2017",
+        "Bronchiectasis Severity Index (Chalmers et al., AJRCCM 2014)"
+      ],
+      "follow_up": "High-resolution chest CT (diagnostic), sputum culture incl. Pseudomonas and NTM, immunoglobulins, test for ABPA (IgE, Aspergillus), spirometry.",
+      "items": {
+        "fever": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Fever comes with infective exacerbations, not the stable state."
+        },
+        "dyspnea": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "Exertional dyspnea is common and graded in the Severity Index (MRC score)."
+        },
+        "wheezing": {
+          "group": "C",
+          "weight": 1.2,
+          "why": "Wheeze is common, but it is non-specific (airway disease in general)."
+        },
+        "cough": {
+          "group": "A",
+          "weight": 3.0,
+          "why": "Chronic cough is present in nearly all patients."
+        },
+        "sputum": {
+          "group": "A",
+          "weight": 3.5,
+          "why": "Daily copious, purulent sputum is the hallmark (BTS)."
+        },
+        "chest_pain": {
+          "group": "C",
+          "weight": 0.5,
+          "why": "Pleuritic pain during exacerbations."
+        },
+        "exposure": {
+          "group": "D",
+          "weight": 0,
+          "why": "Bronchiectasis is caused by past infections, immune defects, ABPA or ciliary disease — not by inhaled exposures."
+        },
+        "pack_years": {
+          "group": "D",
+          "weight": 0,
+          "why": "Smoking is not a cause of bronchiectasis."
+        },
+        "duration": {
+          "group": "B",
+          "weight": 2.4,
+          "sounds": {
+            "years": 1.0,
+            "chronic": 0.8,
+            "episodic": 0.6
+          },
+          "why": "Bronchiectasis is chronic (years) with recurrent infective exacerbations (BTS)."
+        },
+        "auscultation": {
+          "group": "A",
+          "weight": 2.5,
+          "sounds": {
+            "coarse_crackles": 1.0,
+            "rhonchi": 0.6,
+            "wheeze": 0.5,
+            "fine_crackles": 0.3
+          },
+          "why": "Coarse inspiratory crackles over the affected area; rhonchi and wheeze are common."
+        },
+        "bp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood pressure is not part of the diagnostic criteria; it only matters for sepsis / severity."
+        },
+        "pr": {
+          "group": "D",
+          "weight": 0,
+          "why": "Heart rate is non-specific for this disease."
+        },
+        "bt": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Measured fever during exacerbations."
+        },
+        "rr": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Tachypnea in exacerbations and advanced disease."
+        },
+        "gcs": {
+          "group": "D",
+          "weight": 0,
+          "why": "Consciousness is not affected by this disease."
+        },
+        "spo2": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Hypoxemia in advanced disease."
+        },
+        "wbc": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Leukocytosis during exacerbations."
+        },
+        "esr": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Chronic airway infection keeps ESR raised."
+        },
+        "stab": {
+          "group": "D",
+          "weight": 0,
+          "why": "A left shift points to acute bacterial infection, which is not part of this disease."
+        },
+        "seg": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Neutrophilic airway inflammation, neutrophilia in exacerbations."
+        },
+        "eos": {
+          "group": "C",
+          "weight": 0.4,
+          "why": "Eosinophilia suggests ABPA, a treatable cause of bronchiectasis."
+        },
+        "bas": {
+          "group": "D",
+          "weight": 0,
+          "why": "Basophils have no diagnostic role here."
+        },
+        "lym": {
+          "group": "D",
+          "weight": 0,
+          "why": "Lymphocyte count has no diagnostic role here."
+        },
+        "mon": {
+          "group": "D",
+          "weight": 0,
+          "why": "Monocyte count has no diagnostic role here."
+        },
+        "alt": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "ast": {
+          "group": "D",
+          "weight": 0,
+          "why": "Liver enzymes are not related to this disease."
+        },
+        "tp": {
+          "group": "D",
+          "weight": 0,
+          "why": "Total protein moves in both directions (low albumin, high globulin), so it is not a usable marker; ZTT covers the globulins."
+        },
+        "ztt": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "Hypergammaglobulinemia from chronic infection raises ZTT."
+        },
+        "glu": {
+          "group": "D",
+          "weight": 0,
+          "why": "Blood glucose is not related to this disease."
+        },
+        "fev1": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "FEV1 is reduced with obstruction."
+        },
+        "fvc": {
+          "group": "C",
+          "weight": 0.6,
+          "why": "Mixed obstructive / restrictive pattern in extensive disease."
+        },
+        "pfev1": {
+          "group": "B",
+          "weight": 1.5,
+          "why": "%FEV1 is part of the Bronchiectasis Severity Index."
+        },
+        "fev1_fvc": {
+          "group": "B",
+          "weight": 1.8,
+          "why": "An obstructive pattern is the most common spirometry finding."
+        },
+        "xr_pneumonia": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumonia' is not expected in this disease."
+        },
+        "xr_consolidation": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Consolidation' is not expected in this disease."
+        },
+        "xr_lung_opacity": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Opacity' is not expected in this disease."
+        },
+        "xr_infiltration": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Tram-line and ring shadows appear as infiltrates on the X-ray."
+        },
+        "xr_atelectasis": {
+          "group": "C",
+          "weight": 1.0,
+          "why": "Volume loss / atelectasis of the affected lobe; the X-ray is insensitive (HRCT is the gold standard)."
+        },
+        "xr_effusion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Effusion' is not expected in this disease."
+        },
+        "xr_pleural_thickening": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pleural Thickening' is not expected in this disease."
+        },
+        "xr_emphysema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Emphysema' is not expected in this disease."
+        },
+        "xr_fibrosis": {
+          "group": "C",
+          "weight": 0.8,
+          "why": "Scarring around dilated bronchi."
+        },
+        "xr_mass": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Mass' is not expected in this disease."
+        },
+        "xr_lung_lesion": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Lung Lesion' is not expected in this disease."
+        },
+        "xr_nodule": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Nodule' is not expected in this disease."
+        },
+        "xr_pneumothorax": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Pneumothorax' is not expected in this disease."
+        },
+        "xr_edema": {
+          "group": "D",
+          "weight": 0,
+          "why": "The X-ray finding 'Edema' is not expected in this disease."
+        }
+      },
+      "severity": {
+        "source": "Bronchiectasis Severity Index (Chalmers 2014) and BTS exacerbation criteria",
+        "signs": [
+          {
+            "field": "pfev1",
+            "label": "%FEV1",
+            "moderate": [
+              {
+                "below": 80
+              }
+            ],
+            "severe": [
+              {
+                "below": 50
+              }
+            ],
+            "why": "FEV1 % predicted < 80 / < 50 % scores points in the Bronchiectasis Severity Index."
+          },
+          {
+            "field": "spo2",
+            "label": "SpO₂",
+            "moderate": [
+              {
+                "below": 94
+              }
+            ],
+            "severe": [
+              {
+                "at_most": 90
+              }
+            ],
+            "why": "Hypoxemia: SpO₂ < 94 % is below the BTS oxygen target; ≤ 90 % is a severity criterion (A-DROP, GINA)."
+          },
+          {
+            "field": "rr",
+            "label": "Respiratory rate",
+            "moderate": [
+              {
+                "at_least": 22
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 30
+              }
+            ],
+            "why": "Respiratory rate ≥ 22 /min is a qSOFA sign; ≥ 30 /min is a CURB-65 / GINA severity criterion."
+          },
+          {
+            "field": "bt",
+            "label": "Temperature",
+            "moderate": [
+              {
+                "at_least": 38.0
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 39.5
+              },
+              {
+                "below": 36.0
+              }
+            ],
+            "why": "Fever indicates an infective exacerbation."
+          },
+          {
+            "field": "wbc",
+            "label": "White blood cells",
+            "moderate": [
+              {
+                "at_least": 12
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 20
+              },
+              {
+                "below": 4
+              }
+            ],
+            "why": "Leukocytosis ≥ 12 ×10³/µL (SIRS); ≥ 20 or leukopenia < 4 is a severity criterion (ATS/IDSA minor criterion)."
+          },
+          {
+            "field": "esr",
+            "label": "ESR",
+            "moderate": [
+              {
+                "at_least": 50
+              }
+            ],
+            "severe": [
+              {
+                "at_least": 100
+              }
+            ],
+            "why": "A very high ESR reflects a heavy chronic inflammatory burden."
+          }
+        ]
+      }
+    }
+  }
+}

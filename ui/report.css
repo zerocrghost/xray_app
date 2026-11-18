@@ -1,0 +1,92 @@
+/* PneumoLens AI - final report "paper". Always light (it is a printed document), in both app themes.
+   Used three ways: the step-3 preview, Print / Save as PDF (@media print below), and the saved HTML report
+   (app.py inlines this file). */
+.paper{width:794px;max-width:none;background:#fff;color:#1d2433;border-radius:3px;box-shadow:0 10px 40px rgba(0,0,0,.35);
+  padding:34px 40px 30px;font-family:'Segoe UI Variable','Segoe UI','Ubuntu',system-ui,sans-serif;font-size:11.5px;line-height:1.45;
+  user-select:text;text-align:left}
+.paper *{box-sizing:border-box}
+.paper h1,.paper h2,.paper p{margin:0}
+.p-head{display:flex;align-items:center;gap:12px;border-bottom:2px solid #2f6fed;padding-bottom:12px}
+.p-head img{width:32px;height:32px;flex:none}
+.p-head h1{font-size:17px;font-weight:700;color:#1d2433}
+.p-head .s{font-size:10.5px;color:#6b7489}
+.p-head .id{margin-left:auto;text-align:right;font-size:10.5px;color:#6b7489;white-space:nowrap}
+.p-head .id b{display:block;color:#1d2433;font-size:12px}
+.p-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 14px;margin:12px 0 4px;padding:9px 12px;background:#f3f5f9;border-radius:6px;font-size:10.5px}
+.p-meta span{color:#6b7489;display:block;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.p-meta b{font-weight:600;word-break:break-word}
+.p-sec{font-size:11.5px;font-weight:700;color:#2f6fed;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 7px;display:flex;align-items:center;gap:8px;break-after:avoid}
+.p-sec::after{content:"";flex:1;height:1px;background:#e1e5ee}
+.p-assess{display:flex;gap:14px;align-items:center;padding:11px 14px;border-radius:7px;border:1px solid;break-inside:avoid}
+.p-assess.HIGH{background:#fdeeee;border-color:#f5c2c0}.p-assess.MODERATE{background:#fdf5e8;border-color:#f2d3a0}.p-assess.LOW{background:#eaf7f0;border-color:#b9e3cc}
+.p-assess b{font-size:15.5px;display:block}
+.p-assess .sub{font-size:10.5px;color:#5b6375;margin-top:2px}
+.p-assess .badge{margin-left:auto;color:#fff;font-weight:700;border-radius:5px;padding:4px 9px;font-size:10px;letter-spacing:.05em;flex:none}
+.badge.HIGH{background:#e0453f}.badge.MODERATE{background:#d68a1c}.badge.LOW{background:#2fa36f}
+.p-parts{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.p-parts span{font-size:10px;background:#fff;border:1px solid #dfe3eb;border-radius:4px;padding:1px 6px;color:#3d4659}
+.p-note{margin-top:6px;font-size:10.5px;color:#a8650f}
+.p-why{display:grid;grid-template-columns:1fr 1fr;gap:12px;break-inside:avoid}
+.p-why .col{border:1px solid #e1e5ee;border-radius:6px;padding:8px 10px}
+.p-why h3{font-size:11px;margin:0 0 5px;display:flex;align-items:baseline;gap:6px;color:#1d2433}
+.p-why h3 em{font-style:normal;margin-left:auto;font-family:Consolas,'DejaVu Sans Mono',monospace;color:#2f6fed}
+.p-why ul{list-style:none;margin:0;padding:0}
+.p-why li{display:flex;gap:6px;padding:2px 0;font-size:10.5px;align-items:baseline}
+.p-why li i{font-style:normal;font-weight:700;width:10px;flex:none}
+.p-why li.y i{color:#1c7c53}.p-why li.n i{color:#c62f2a}
+.p-why li small{color:#6b7489;margin-left:auto;white-space:nowrap;font-family:Consolas,monospace;font-size:9.5px}
+.p-why .none{font-size:10.5px;color:#8a92a6}
+.p-sevb{display:inline-block;color:#fff;font-weight:700;border-radius:5px;padding:3px 8px;font-size:9.5px;letter-spacing:.05em;white-space:nowrap}
+.p-sevb.severe{background:#c62f2a}.p-sevb.moderate{background:#d68a1c}.p-sevb.mild{background:#2fa36f}.p-sevb.na{background:#8a92a6}
+.p-badges{margin-left:auto;display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex:none}
+.p-cands{display:flex;flex-direction:column;gap:7px}
+.p-cands .p-assess b{font-size:14px}
+.p-cands .rank{font-size:9px;font-weight:700;color:#2f6fed;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:1px}
+.p-rule{font-size:10px;color:#6b7489;margin-top:5px}
+.p-cblock{margin-top:10px;break-inside:avoid}
+.p-cblock h4{font-size:12px;margin:0 0 6px;display:flex;align-items:center;gap:8px;color:#1d2433}
+.p-cblock h4 .p-sevb{margin-left:auto}
+.p-sevline{margin-top:6px;padding:6px 10px;border-radius:6px;background:#f6f7fa;border:1px solid #e1e5ee;font-size:10.5px;color:#3d4659}
+.p-sevline b{color:#1d2433}
+.p-sevline .sv{color:#c62f2a;font-weight:600}.p-sevline .md{color:#a8650f;font-weight:600}
+.p-alert{margin-top:8px;padding:7px 10px;border-radius:6px;background:#fff1f0;border:1px solid #f5c2c0;color:#b42318;font-size:10.5px;break-inside:avoid}
+.p-two{display:grid;grid-template-columns:150px 1fr;gap:16px;break-inside:avoid}
+.p-img{height:160px;border-radius:5px;overflow:hidden;background:#000;display:grid;place-items:center;color:#8a92a6;font-size:10px}
+.p-img img{width:100%;height:100%;object-fit:contain;display:block}
+.paper table{width:100%;border-collapse:collapse;font-size:10.8px}
+.paper th{text-align:left;font-weight:600;color:#6b7489;font-size:9px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #d9dee8;padding:4px 6px}
+.paper td{padding:3.5px 6px;border-bottom:1px solid #eef1f6;vertical-align:top}
+.paper tr{break-inside:avoid}
+.paper td.r,.paper th.r{text-align:right}
+.paper td.r{font-family:Consolas,'DejaVu Sans Mono',monospace;font-size:10.3px;white-space:nowrap}
+.paper td.dim,.paper tr.dim td{color:#8a92a6}
+.paper tr.sg td{font-size:9.5px;font-weight:700;color:#2f6fed;text-transform:uppercase;letter-spacing:.05em;padding-top:7px;background:#f7f9fc}
+.paper tr.top td{font-weight:600;background:#f7f9fc}
+.f{font-size:8.6px;font-weight:700;border-radius:3px;padding:1px 6px;letter-spacing:.04em;white-space:nowrap}
+.f.HIGH,.f.h{background:#fde2e1;color:#c62f2a}.f.MODERATE,.f.m{background:#fdf0db;color:#a8650f}.f.LOW,.f.n,.f.NORMAL{background:#ddf4ea;color:#1c7c53}
+.f.LOW.lab{background:#fdf0db;color:#a8650f}
+.pb{display:inline-block;height:5px;border-radius:3px;vertical-align:middle}
+.g{display:inline-block;font-size:8.5px;font-weight:700;border-radius:3px;padding:0 4px;margin-left:4px}
+.g.A{background:#fde2e1;color:#b42318}.g.B{background:#fdf0db;color:#93540a}.g.C{background:#e6eefe;color:#1d4ed8}
+.p-text{color:#3d4659}
+.p-text b{color:#1d2433}
+.p-sign{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:10px;font-size:10.5px;break-inside:avoid}
+.p-sign div{border-top:1px solid #c9cfdb;padding-top:4px;color:#6b7489}
+.p-sign b{display:block;color:#1d2433;font-size:11px;min-height:15px}
+.p-notes{white-space:pre-wrap;border:1px solid #e1e5ee;border-radius:6px;padding:8px 10px;min-height:40px;color:#1d2433}
+.p-foot{margin-top:16px;padding-top:8px;border-top:1px solid #e1e5ee;font-size:9.5px;color:#8a92a6;display:flex;gap:12px}
+.p-foot span:last-child{margin-left:auto}
+
+/* print / PDF: only the copy of the report in #printRoot */
+#printRoot{display:none}
+/* zero page margins (the margin area would show the app's background); the white margin is the paper's own
+   padding, repeated on every printed page by box-decoration-break */
+@page{size:A4;margin:0}
+@media print{
+  :root{color-scheme:light !important}
+  html,body{height:auto !important;overflow:visible !important;background:#fff !important}
+  body>*:not(#printRoot){display:none !important}
+  #printRoot{display:block}
+  #printRoot .paper{width:auto;box-shadow:none;border-radius:0;padding:12mm 13mm;zoom:1 !important;
+    -webkit-box-decoration-break:clone;box-decoration-break:clone}
+}

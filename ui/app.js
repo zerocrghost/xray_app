@@ -62,6 +62,45 @@ function showLanding() {
   document.body.classList.add("landing-on");
 }
 
+// workspace pages: 1 = X-ray analysis, 2 = symptoms & labs
+let step = 1;
+
+const canReport = () => !!state.result || Clinical.hasInput();
+
+function showStep(n) {
+  if (state.busy || (n > 1 && !state.ready) || (n === 3 && !canReport())) return;
+  showWorkspace();
+  step = n;
+  for (const k of [1, 2, 3]) $("page" + k).hidden = n !== k;
+  if (n === 1) fitView();
+  else if (n === 2) Clinical.renderLeft();
+  renderStepper();
+  updateButtons();
+  if (n === 3) Report.open();       // recomputed from the current step-1 and step-2 data
+}
+
+function renderStepper() {
+  const s1 = $("step1"), s2 = $("step2"), s3 = $("step3");
+  const done1 = !!state.result, done2 = Clinical.hasResult(), done3 = Report.ready() && !Report.unsaved();
+  s1.className = "step" + (step === 1 ? " active" : done1 ? " done" : "");
+  s2.className = "step" + (step === 2 ? " active" : done2 ? " done" : "");
+  s3.className = "step" + (step === 3 ? " active" : done3 ? " done" : "");
+  s1.querySelector(".num").textContent = step !== 1 && done1 ? "✓" : "1";
+  s2.querySelector(".num").textContent = step !== 2 && done2 ? "✓" : "2";
+  s3.querySelector(".num").textContent = step !== 3 && done3 ? "✓" : "3";
+  $("stepLine1").classList.toggle("done", done1);
+  $("stepLine2").classList.toggle("done", done2);
+  s3.title = canReport() ? (step === 3 ? "" : "Final report") : "Analyze an X-ray or enter clinical data first";
+  if (state.result) {
+    const n = state.labels.filter((l) => band(state.result.scores[l]) === "high").length;
+    $("step1Sub").textContent = n ? `${n} finding${n > 1 ? "s" : ""} flagged` : "No high findings";
+  } else {
+    $("step1Sub").textContent = "Image · 11 pathologies";
+  }
+  s1.title = step === 1 ? "" : "Back to the X-ray analysis";
+  s2.title = step === 2 ? "" : "Symptoms, vital signs and lab data";
+}
+
 function updateButtons() {
   const idle = state.ready && !state.busy;
   $("btnUpload").disabled = !idle;
@@ -69,9 +108,25 @@ function updateButtons() {
   $("empty").classList.toggle("disabled", !idle);
   $("btnAnalyze").disabled = !idle || !state.image;
   $("btnClear").disabled = !idle || !state.image;
-  $("btnExport").disabled = !idle || !state.result;
+  const canExport = idle && (!!state.result || Clinical.hasResult());
+  $("btnExport").disabled = !canExport;
   $("device").disabled = !idle;
   for (const id of ["zoomIn", "zoomOut", "fit", "invert"]) $(id).disabled = !state.image;
+  // step 2
+  $("btnNext").disabled = !idle;
+  $("step2").disabled = !idle;
+  $("step1").disabled = state.busy;
+  $("btnImport").disabled = !idle;
+  $("btnRun").disabled = !idle || !Clinical.hasInput();
+  $("btnCClear").disabled = !idle || !(Clinical.hasInput() || Clinical.hasResult());
+  $("btnCExport").disabled = !canExport;
+  // step 3
+  $("btnNext2").disabled = !idle || !canReport();
+  $("step3").disabled = !idle || !canReport();
+  $("btnSave").disabled = !idle || !Report.ready();
+  $("btnPrint").disabled = !idle || !Report.ready();
+  $("btnNewPatient").disabled = state.busy;
+  $("btnBack3").disabled = state.busy;
 }
 
 // Wraps every Python call: busy flag, buttons, error toast.
@@ -175,7 +230,7 @@ function applyView() {
 }
 
 function fitView() {
-  if (!state.image || onLanding()) return;
+  if (!state.image || onLanding() || $("page1").hidden) return;
   const v = $("viewer").getBoundingClientRect();
   view.fit = Math.min(v.width / view.w, v.height / view.h);
   view.scale = view.fit;
@@ -230,6 +285,8 @@ function showImage(data) {
   $("stFile").textContent = info.file;
   setStatus("ok", "Image loaded");
   renderResults();
+  renderStepper();
+  Clinical.xrayChanged();       // the old X-ray scores no longer apply
   updateButtons();
 }
 
@@ -257,6 +314,8 @@ function clearImage() {
   meta.append(s);
   setStatus("ok", "Ready");
   renderResults();
+  renderStepper();
+  Clinical.xrayChanged();
   updateButtons();
 }
 
@@ -306,14 +365,16 @@ async function analyze() {
     setStatus("ok", "Analysis complete");
   }
   renderResults();
+  renderStepper();
+  if (r) Clinical.xrayChanged();
   updateButtons();
 }
 
 async function exportReport() {
-  if (!state.result || state.busy) return;
+  if (!(state.result || Clinical.hasResult()) || state.busy) return;
   const r = await call(() => api().export_report(), "Exporting…");
   if (r && !r.cancelled) { state.exported = true; toast("Report saved: " + r.path); }
-  setStatus(r ? "ok" : "err", r ? "Analysis complete" : "Export failed");
+  setStatus(r ? "ok" : "err", r ? "Report ready" : "Export failed");
 }
 
 async function clearAll() {
@@ -350,23 +411,86 @@ for (const b of document.querySelectorAll(".theme-btn")) b.onclick = toggleTheme
 setTheme(theme(), false);
 
 // ------------------------------------------------------------------ exit confirmation
-const exitOpen = () => !$("exitModal").hidden;
+// ------------------------------------------------------------------ settings dialog
+const settingsOpen = () => !$("setModal").hidden;
+const SET_DEFAULTS = { candidate_ratio: 0.5, max_candidates: 3 };
 
-function openExitModal() {
-  $("exitText").textContent = state.result && !state.exported
-    ? "The current analysis has not been exported. It will be lost when the app closes."
-    : "Are you sure you want to close the application?";
+function settingsExample() {
+  const ratio = +$("setRatio").value / 100, max = Math.min(7, Math.max(1, parseInt($("setMax").value, 10) || 1));
+  $("setRatioVal").textContent = Math.round(ratio * 100) + "%";
+  // the current report's scores if there is one, else an illustration
+  const list = Report.ready() ? Report.scores() : [["Pneumonia", 0.72], ["Lung Abscess", 0.66], ["Bronchiectasis", 0.41], ["COPD", 0.30]];
+  const cut = list[0][1] * ratio;
+  const parts = list.map(([n, m], i) => {
+    const shown = i === 0 || (i < max && m >= cut && list.slice(1, i).every(([, x]) => x >= cut));
+    return `<span class="${shown ? "in" : "out"}">${n} ${Math.round(m * 100)}%</span>`;
+  });
+  $("setExample").innerHTML = `${Report.ready() ? "Current report" : "Example"}: cut-off ${Math.round(cut * 100)}% → ` + parts.join(" · ");
+}
+
+async function openSettings() {
+  const r = await api().get_settings();
+  $("setRatio").value = Math.round((r.candidate_ratio ?? 0.5) * 100);
+  $("setMax").value = r.max_candidates ?? 3;
+  settingsExample();
+  $("setModal").hidden = false;
+  $("setRatio").focus();
+}
+
+function closeSettings() { $("setModal").hidden = true; }
+
+async function saveSettings() {
+  const r = await api().set_settings({ candidate_ratio: +$("setRatio").value / 100, max_candidates: +$("setMax").value });
+  if (!r.ok) { toast(r.error, true); return; }
+  closeSettings();
+  toast(`Settings saved: candidates ≥ ${Math.round(r.candidate_ratio * 100)}% of the top, at most ${r.max_candidates}.`);
+  if (step === 3) Report.open();                     // apply to the open report right away
+}
+
+$("btnSettings").onclick = openSettings;
+$("setClose").onclick = closeSettings;
+$("setCancel").onclick = closeSettings;
+$("setSave").onclick = saveSettings;
+$("setReset").onclick = () => {
+  $("setRatio").value = SET_DEFAULTS.candidate_ratio * 100;
+  $("setMax").value = SET_DEFAULTS.max_candidates;
+  settingsExample();
+};
+$("setRatio").addEventListener("input", settingsExample);
+$("setMax").addEventListener("input", settingsExample);
+$("setModal").addEventListener("mousedown", (e) => { if (e.target === e.currentTarget) closeSettings(); });
+
+// one confirmation dialog for Exit and New Patient
+const exitOpen = () => !$("exitModal").hidden;
+let modalAction = null;
+
+function confirmBox({ title, text, ok, onOk }) {
+  $("exitTitle").textContent = title;
+  $("exitText").textContent = text;
+  $("exitConfirm").firstChild.textContent = ok;
+  modalAction = onOk;
   $("exitModal").hidden = false;
   $("exitConfirm").focus();
+}
+
+function openExitModal() {
+  const unsaved = (state.result || Clinical.hasResult() || Report.ready()) && !state.exported;
+  confirmBox({
+    title: "Exit PneumoLens AI?",
+    text: unsaved ? "The current analysis has not been exported. It will be lost when the app closes."
+                  : "Are you sure you want to close the application?",
+    ok: "Exit",
+    onOk: () => api().exit(),
+  });
 }
 
 function closeExitModal() {
   $("exitModal").hidden = true;
 }
 
-$("btnExit").onclick = openExitModal;
+for (const b of document.querySelectorAll("[data-exit]")) b.onclick = openExitModal;
 $("exitCancel").onclick = closeExitModal;
-$("exitConfirm").onclick = () => api().exit();
+$("exitConfirm").onclick = () => { const f = modalAction; closeExitModal(); if (f) f(); };
 $("exitModal").addEventListener("mousedown", (e) => { if (e.target === e.currentTarget) closeExitModal(); });
 
 // empty image panel: click (or Enter / Space when focused) opens the file dialog
@@ -383,6 +507,12 @@ $("btnHome").onclick = showLanding;
 $("btnUpload").onclick = uploadImage;
 $("btnAnalyze").onclick = analyze;
 $("btnExport").onclick = exportReport;
+$("btnCExport").onclick = exportReport;
+$("btnNext").onclick = () => showStep(2);
+$("step1").onclick = () => showStep(1);
+$("step2").onclick = () => showStep(2);
+$("step3").onclick = () => showStep(3);
+$("btnNext2").onclick = () => showStep(3);
 $("btnClear").onclick = clearAll;
 $("zoomIn").onclick = () => zoomAt(1.25);
 $("zoomOut").onclick = () => zoomAt(1 / 1.25);
@@ -417,12 +547,40 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     return;
   }
+  if (settingsOpen()) {         // settings: Esc cancels, Enter saves
+    if (e.key === "Escape") closeSettings();
+    else if (e.key === "Enter") { e.preventDefault(); saveSettings(); }
+    if ((e.ctrlKey && "rsop".includes(k)) || e.key === "F5") e.preventDefault();
+    return;
+  }
+  if (Clinical.modalOpen()) {   // weighting table: Esc closes it, nothing else reaches the page
+    if (e.key === "Escape") Clinical.closeWeights();
+    if ((e.ctrlKey && "rso".includes(k)) || e.key === "F5") e.preventDefault();
+    return;
+  }
   if (e.ctrlKey && k === "t") { e.preventDefault(); toggleTheme(); return; }
   if (onLanding()) {            // landing page: only Enter (start) and Ctrl+O (open) do something
     if (e.key === "Enter" && !e.ctrlKey) { e.preventDefault(); showWorkspace(); }
     else if (e.ctrlKey && k === "o") { e.preventDefault(); uploadImage(); }
     else if ((e.ctrlKey && (k === "r" || k === "s")) || e.key === "F5") e.preventDefault();
     return;
+  }
+  if (e.ctrlKey && k === "p" && step !== 3) { e.preventDefault(); return; }   // only the report is printable
+  if (step === 3) {             // final report: typing in the fields stays normal
+    if (e.ctrlKey && k === "s") { e.preventDefault(); Report.save(); }
+    else if (e.ctrlKey && k === "p") { e.preventDefault(); Report.print(); }
+    else if ((e.ctrlKey && (k === "r" || k === "o")) || e.key === "F5") e.preventDefault();
+    return;
+  }
+  if (step === 2) {             // symptoms & labs
+    if (e.ctrlKey && k === "o") { e.preventDefault(); Clinical.importFile(); }
+    else if (e.ctrlKey && k === "r") { e.preventDefault(); Clinical.run(); }
+    else if (e.ctrlKey && k === "s") { e.preventDefault(); exportReport(); }
+    else if (e.key === "F5") e.preventDefault();
+    return;
+  }
+  if (e.target.matches && e.target.matches("input, select")) {
+    if (e.ctrlKey && "ors".includes(k)) e.preventDefault(); else return;
   }
   if (e.ctrlKey && k === "o") { e.preventDefault(); uploadImage(); }
   else if (e.ctrlKey && k === "r") { e.preventDefault(); analyze(); }      // also blocks page reload
@@ -448,6 +606,7 @@ async function start() {
     return;
   }
   state.ready = true;
+  Clinical.init(r.clinical);
   state.labels = r.shown_labels;
   state.bands = r.bands;
   state.device = r.device;
@@ -468,8 +627,14 @@ async function start() {
   setChip("ok", "Model loaded");
   setStatus("ok", "Ready");
   renderResults();
+  renderStepper();
   updateButtons();
 }
 
-if (window.pywebview && window.pywebview.api) start();
-else window.addEventListener("pywebviewready", start);
+// start once every script (clinical.js too) has run and the Python bridge exists
+function boot() {
+  if (window.pywebview && window.pywebview.api) start();
+  else window.addEventListener("pywebviewready", start, { once: true });
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
