@@ -3,3 +3,7 @@ build/
 dist/
 *.spec
 __pycache__/
+
+# build archives (attach them to a GitHub Release instead)
+*.rar
+*.zip
