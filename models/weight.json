@@ -1,6 +1,6 @@
 {
   "name": "PneumoLens AI clinical weighting table",
-  "version": "1.5",
+  "version": "1.6",
   "updated": "2026-11-17",
   "disclaimer": "Decision support for research use only. Weights are expert-style assumptions derived from the cited guidelines and textbook descriptions, not fitted to patient data. They must be validated before clinical use.",
   "method": {
@@ -2474,6 +2474,17 @@
               }
             ],
             "why": "Leukocytosis ≥ 12 ×10³/µL (SIRS); ≥ 20 or leukopenia < 4 is a severity criterion (ATS/IDSA minor criterion)."
+          },
+          {
+            "field": "age",
+            "label": "Age",
+            "moderate": [
+              {
+                "at_least": 65
+              }
+            ],
+            "severe": [],
+            "why": "CURB-65: age >= 65 years scores one point (from the patient page)."
           },
           {
             "field": "stab",

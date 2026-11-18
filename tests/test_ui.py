@@ -34,8 +34,8 @@ IMAGE = "03_siim_sample.dcm"
 results = {"failures": []}
 
 
-def check(cond, msg):
-    print(("  ok    " if cond else "  FAIL  ") + msg)
+def check(cond, msg, detail=""):
+    print(("  ok    " if cond else "  FAIL  ") + msg + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
         results["failures"].append(msg)
 
@@ -47,6 +47,18 @@ def _wait_file(cond, timeout=5):
             return True
         time.sleep(0.1)
     return False
+
+
+def _diff(a, b, path=""):
+    """Differences between two JSON values (for test messages)."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        out = []
+        for k in sorted(set(a) | set(b)):
+            if k in ("saved_at", "revision", "save_reason", "saved_to"):
+                continue
+            out += _diff(a.get(k), b.get(k), f"{path}.{k}")
+        return out
+    return [] if a == b else [f"{path}: {str(a)[:60]} → {str(b)[:60]}"]
 
 
 def _read_json(path: Path, timeout=10):
@@ -85,7 +97,20 @@ def drive(window, api):
         check(js("document.body.classList.contains('landing-on')") is True, "app opens on the landing page")
         check(wait_for("!document.querySelector('#btnLandOpen').disabled"), "landing 'Open X-ray Image' is enabled")
         js("document.querySelector('#btnStart').click()")
-        check(js("!document.body.classList.contains('landing-on')") is True, "Start New Analysis opens step 1")
+        check(js("!document.body.classList.contains('landing-on') && !document.querySelector('#page0').hidden") is True,
+              "Start New Analysis opens the patient page")
+        check(js("document.querySelector('[data-p=exam_date]').value") == time.strftime("%Y-%m-%d"),
+              "exam date defaults to today")
+        for k, v in {"patient_id": "MRN-0042", "name": "Kim Test", "dob": "1950-03-14", "location": "Seoul",
+                     "referring": "Dr. Lee"}.items():
+            js(f"(() => {{ const i = document.querySelector('[data-p={k}]'); i.value = '{v}';"
+               f" i.dispatchEvent(new Event('input', {{bubbles: true}})); }})()")
+        js("document.querySelector('[data-p=sex] [data-v=Male]').click()")
+        age = js("document.querySelector('[data-p=age]').value")
+        check(age.isdigit() and int(age) >= 75, f"age is calculated from the date of birth ({age})")
+        check("Kim Test" in js("document.querySelector('#step0Sub').textContent"), "stepper shows the patient")
+        js("document.querySelector('#btnNext0').click()")
+        check(js("!document.querySelector('#page1').hidden") is True, "Next: X-Ray Analysis opens step 2 (X-ray)")
         check(js("document.querySelector('#btnAnalyze').disabled") is True,
               "Start Analysis is disabled before an image is loaded")
         js("document.querySelector('#btnHome').click()")
@@ -172,22 +197,32 @@ def drive(window, api):
         # Exit asks for confirmation
         modal = "!document.querySelector('#exitModal').hidden"
         js("document.querySelector('#btnExit').click()")
-        check(js(modal) is True, "Exit opens the confirmation dialog")
+        check(wait_for(modal, 5), "Exit opens the confirmation dialog")
         check(js("document.activeElement.id") == "exitConfirm", "the Exit button has focus")
         js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
         check(js(modal) is False, "Esc closes the dialog without exiting")
         js("document.querySelector('#btnAnalyze').click()")
         wait_for("document.querySelectorAll('#rows .row:not(.pending)').length === 11")
         js("document.querySelector('#btnExit').click()")
-        check("not been exported" in js("document.querySelector('#exitText').textContent"),
-              "the dialog warns when the analysis was not exported")
+        wait_for(modal, 5)
+        text = js("document.querySelector('#exitText').textContent")
+        check("report has not been saved" in text and "saved to the dataset folder automatically" in text,
+              "Exit warns that the report is not saved and that the data is saved automatically")
         js("document.querySelector('#exitCancel').click()")
         check(js(modal) is False, "Cancel closes the dialog")
         exited = []
-        api.exit = lambda: exited.append(True)         # don't really close the window mid-test
+        real_exit = api.exit
+        def fake_exit(force=False):                    # save like the real exit, but don't close the window mid-test
+            r = api.save_case("exit")
+            exited.append(r)
+            return r
+        api.exit = fake_exit
         js("document.querySelector('#btnExit').click()")
+        wait_for(modal, 5)
         js("document.querySelector('#exitConfirm').click()")
-        check(wait_for("true") and (time.sleep(0.5) or exited == [True]), "confirming calls exit")
+        check(wait_for("true") and (time.sleep(0.8) or (len(exited) == 1 and exited[0]["ok"] and exited[0].get("saved"))),
+              "confirming Exit saves the case data (then the window would close)")
+        api.exit = real_exit
     except Exception:
         traceback.print_exc()
         results["failures"].append("exception")
@@ -393,8 +428,9 @@ def step3(window, api, js, wait_for, tmp, answers):
     check("Step 1 · X-ray findings" in paper and "Step 2 · Symptoms" in paper and top["name"] in paper,
           "the report explains the assessment with both steps")
     parts = js("document.querySelector('#rPaper .p-parts').textContent")
-    check(f"X-ray: {round(top['parts']['xray']['match'] * 100)}%" in parts and
-          f"labs: {round(top['parts']['clinical']['match'] * 100)}%" in parts, f"step-1 / step-2 part scores ({parts})")
+    shown_part = lambda p: "neutral" if p["neutral"] else f"{round(p['match'] * 100)}%"
+    check(f"X-ray: {shown_part(top['parts']['xray'])}" in parts and
+          f"labs: {shown_part(top['parts']['clinical'])}" in parts, f"step-1 / step-2 part scores ({parts})")
     check(js("document.querySelectorAll('#rPaper table')[2].querySelectorAll('tr').length") == 8,
           "differential table lists the 7 diseases")
     js("document.querySelector('[data-opt=raw]').click()")
@@ -408,58 +444,105 @@ def step3(window, api, js, wait_for, tmp, answers):
     js("(() => { const i = document.querySelector('#rReviewer'); i.value = 'Dr. Test'; i.dispatchEvent(new Event('input')); })()")
     js("document.querySelector('#rAgree').click()")
     js("(() => { const i = document.querySelector('#rNotes'); i.value = 'Start antibiotics.'; i.dispatchEvent(new Event('input')); })()")
-    js("(() => { const i = document.querySelector('#rPatient'); i.value = 'ANON-0042'; i.dispatchEvent(new Event('input')); })()")
     time.sleep(0.4)
+    check("Kim Test" in js("document.querySelector('#rPatient').textContent") and
+          "MRN-0042" in js("document.querySelector('#rPaper .p-meta').textContent"),
+          "the report shows the patient from the patient page")
     js("document.querySelector('#rSign').click()")
     check(js("document.querySelector('#rSignChip').textContent") == "Signed" and
           "Dr. Test" in js("document.querySelector('#rPaper .p-sign').textContent"), "Sign report signs it")
     check(_wait_file(lambda: app.load_settings().get("reviewer") == "Dr. Test"), "the reviewer name is remembered")
 
-    # save in all four formats
-    for fmt in ("json", "csv", "html", "pdf"):
+    check(js("[...document.querySelectorAll('#rFmt button')].map(b => b.dataset.fmt).join()") == "pdf,docx" and
+          js("!document.querySelector('#btnPrint')"), "export formats are PDF and DOCX; there is no Print button")
+
+    # save as PDF and DOCX: each report goes where the doctor chose; the case data goes to the dataset ONCE
+    ds = Path(app.dataset_dir())
+    for fmt in ("pdf", "docx"):
         target = tmp / f"final.{fmt}"
         answers.append(str(target))
         js(f"Report.setFormat('{fmt}')")
         js("document.querySelector('#btnSave').click()")
         check(_wait_file(lambda: target.exists() and target.stat().st_size > 0, 30), f"Save Report writes {fmt.upper()}")
         wait_for("!document.querySelector('#btnSave').disabled", 10)
-    data = _read_json(tmp / "final.json")
-    check(data["diseases"][0]["name"] == top["name"] and data["review"]["reviewer"] == "Dr. Test" and
-          data["patient"]["id"] == "ANON-0042" and "xray" in data["diseases"][0]["parts"], "JSON report: assessment, parts, review")
-    csv_text = (tmp / "final.csv").read_text(encoding="utf-8")
-    check("combined_match,xray_part,clinical_part" in csv_text and "Cardiomegaly" in csv_text, "CSV report: parts and X-ray outputs")
-    html = (tmp / "final.html").read_text(encoding="utf-8")
-    check(html.startswith("<!doctype html>") and "data:image/svg+xml;base64" in html and top["name"] in html
-          and "Start antibiotics." in html, "HTML report is self-contained")
     pdf = (tmp / "final.pdf").read_bytes()
     check(pdf[:5] == b"%PDF-" and len(pdf) > 20000, f"PDF report printed by WebView2 ({len(pdf) // 1024} KB)")
+    from docx import Document
+    doc = Document(str(tmp / "final.docx"))
+    cells = " ".join(c.text for t in doc.tables for row in t.rows for c in row.cells)
+    check("Kim Test" in cells and top["name"] in " ".join(p.text for p in doc.paragraphs),
+          "DOCX report holds the patient and the assessment")
+    cases = sorted(ds.glob("*.json"))
+    check(len(cases) == 1 and cases[0].stem == api._report_id, f"one dataset file for this case ({[c.name for c in cases]})")
+    rec = _read_json(cases[0])
+    check(rec["patient"]["name"] == "Kim Test" and rec["patient"]["age"] >= 75 and len(rec["reports"]) == 2
+          and rec["review"]["reviewer"] == "Dr. Test" and len(rec["xray"]["analysis"]["scores"]) == 18
+          and rec["clinical"]["inputs"]["wbc"] and rec["analysis"]["diseases"][0]["name"] == top["name"],
+          f"dataset record: patient, X-ray, clinical, analysis, review, 2 reports (revision {rec['revision']})")
+    check("Case data saved" in js("document.querySelector('#rData').textContent"), "the page confirms where the data went")
+    case_file, rev = cases[0], rec["revision"]
 
     # editing after signing removes the signature
     js("(() => { const i = document.querySelector('#rNotes'); i.value += ' Recheck in 48 h.'; i.dispatchEvent(new Event('input')); })()")
     check(js("document.querySelector('#rSignChip').textContent") == "Not signed", "editing after signing removes the signature")
 
-    # new patient
+    # new patient: the changed notes are saved into the SAME file (revision + 1), then everything is cleared
+    case_id = api._report_id
     js("document.querySelector('#btnNewPatient').click()")
-    check(js("document.querySelector('#exitTitle').textContent") == "Start a new patient?", "New Patient asks for confirmation")
+    check(wait_for("document.querySelector('#exitTitle').textContent === 'Start a new patient?'", 5),
+          "New Patient asks for confirmation")
     js("document.querySelector('#exitConfirm').click()")
-    check(wait_for("!document.querySelector('#page1').hidden && document.querySelector('#img').hidden && "
-                   "!Clinical.hasInput() && document.querySelector('#step3').disabled"),
-          "New Patient clears everything and returns to step 1")
-    check(api._image is None and api._report is None, "the Python side is cleared too")
-    js("document.querySelector('#exitTitle').textContent = 'Exit PneumoLens AI?'")
+    check(wait_for("!document.querySelector('#page0').hidden && document.querySelector('#img').hidden && "
+                   "!Clinical.hasInput() && document.querySelector('[data-p=name]').value === '' && "
+                   "document.querySelector('#step3').disabled"),
+          "New Patient clears everything and returns to the patient page")
+    check(api._image is None and api._report is None and api._report_id is None, "the Python side is cleared too")
+    rec = _read_json(case_file)
+    check(sorted(ds.glob("*.json")) == [case_file] and rec["revision"] == rev + 1 and "Recheck in 48 h." in rec["review"]["notes"],
+          f"New Patient saved the edited case into the same file (revision {rev} → {rec['revision']}, still 1 file)")
+
+    # open the saved case again to review it
+    answers.append([str(case_file)])
+    js("document.querySelector('#btnOpenCase0').click()")
+    check(wait_for("!document.querySelector('#page3').hidden && document.querySelector('#rPaper .p-assess')", 20),
+          "Open Saved Case loads the case and shows the report")
+    check(js("document.querySelector('[data-p=name]').value") == "Kim Test" and
+          "Recheck in 48 h." in js("document.querySelector('#rNotes').value") and
+          js("!document.querySelector('#img').hidden") and js("Clinical.hasInput()") and api._report_id == case_id,
+          "patient, notes, X-ray image and clinical data are restored (same case id)")
+    check(js("document.querySelector('#rVerdict .cand .nm').firstChild.textContent") == top["name"],
+          "the reopened case gives the same assessment")
+    after = _read_json(case_file)
+    diff = _diff(rec, after)
+    check(sorted(ds.glob("*.json")) == [case_file] and after["revision"] == rev + 1,
+          "opening a case writes nothing new (no repeat)", "; ".join(diff[:8]))
+    js("Case.newPatient()")                            # unchanged since opening: nothing is written
+    wait_for("document.querySelector('#exitTitle').textContent === 'Start a new patient?'", 5)
+    js("document.querySelector('#exitConfirm').click()")
+    wait_for("!document.querySelector('#page0').hidden && document.querySelector('[data-p=name]').value === ''")
+    check(_read_json(case_file)["revision"] == rev + 1 and len(list(ds.glob("*.json"))) == 1,
+          "closing an unchanged reopened case does not save it again")
     # reload the image for the rest of the step-1 checks
+    js("showStep(1)")
     answers.append([str(HERE / "images" / IMAGE)])
     js("document.querySelector('#btnUpload').click()")
     wait_for("document.querySelector('#img').naturalWidth > 0 && !document.querySelector('#img').hidden")
 
 
 def main():
-    app.SETTINGS_PATH = Path(tempfile.mkdtemp()) / "settings.json"   # never touch the user's real settings
+    tmp = Path(tempfile.mkdtemp())
+    app.SETTINGS_PATH = tmp / "settings.json"               # never touch the user's real settings
+    app.FALLBACK_DATASET = tmp / "fallback"
+    app.save_settings(dataset_dir=str(tmp / "dataset"))       # nor the real dataset folder
     api = app.Api()
     window = webview.create_window(f"{app.APP_NAME} (test)", url=str(app.UI_INDEX), js_api=api,
                                    width=1440, height=900, min_size=app.MIN_WINDOW_SIZE)
     api._window = window
+    real = app.APP_DIR / "dataset"
+    before = sorted(real.glob("*.json")) if real.exists() else []
     webview.start(drive, (window, api), gui=GUI)
+    after = sorted(real.glob("*.json")) if real.exists() else []
+    check(after == before, "the test never writes into the real ./dataset folder")
     print("RESULT:", "FAIL" if results["failures"] else "PASS")
     return int(bool(results["failures"]))
 

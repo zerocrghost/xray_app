@@ -19,6 +19,9 @@ import json
 from pathlib import Path
 
 GROUP_ORDER = "ABCD"
+# a step (X-ray or clinical part) whose evidence weight is below this is "neutral": its own % would only show the
+# 20 % prior (no finding clearly for or against), so the report says "neutral" instead of a misleading number
+NEUTRAL_EVIDENCE = 1.0
 
 
 def _ramp(x: float, frm: float, full: float) -> float:
@@ -92,7 +95,7 @@ class ClinicalModel:
             known.update(f.get("fields") or [fid])
             if f["input"] == "xray":
                 known.add(f["field"])
-        known.add("xray:Pneumothorax")
+        known.update({"xray:Pneumothorax", "age"})
         for dk, d in self.diseases.items():
             for sg in (d.get("severity") or {}).get("signs", []):
                 for c in [{"field": sg["field"]}] + sg["moderate"] + sg["severe"]:
@@ -137,6 +140,9 @@ class ClinicalModel:
                     lim = limits.get(fld) if isinstance(limits, dict) else limits
                     if x is not None and (not lim or lim[0] <= x <= lim[1]):
                         out[fld] = x
+        age = _num(inputs.get("age"))                       # from the patient page; used by severity signs only
+        if age is not None and 0 <= age <= 130:
+            out["age"] = age
         if "fev1_fvc" not in out and "fev1" in out and "fvc" in out and out["fvc"] > 0:
             r = out["fev1"] / out["fvc"] * 100
             if 10 <= r <= 100:
@@ -248,6 +254,9 @@ class ClinicalModel:
                     "coverage": round(a_["seen"] / a_["total"], 4) if a_["total"] else 0.0,
                     "used": a_["seen"] > 0,
                     "weight_share": round(a_["den"] / den, 4) if den else 0.0,   # share of the combined evidence
+                    # evidence actually carried by this part; < NEUTRAL_EVIDENCE = its % is just the neutral prior
+                    "evidence": round(a_["den"], 3),
+                    "neutral": a_["seen"] > 0 and a_["den"] < NEUTRAL_EVIDENCE,
                 }
             for fc in factors:
                 # signed share of this item in the match: what it adds above, minus what it costs below
@@ -335,6 +344,8 @@ class ClinicalModel:
             return "" if x is None else f"{x * 100:.0f}%"
         if field in self.features:
             return self.display_value(field, values, xray)
+        if field == "age":
+            return f"{_fmt(values.get('age'))} y"
         return _fmt(values.get(field))
 
     def value_rows(self, inputs: dict) -> dict:

@@ -28,6 +28,31 @@ These are weighted per disease. Exposure and a chronic course are A for COPD and
 (`WBC,12.1` / `fever,yes` / `BP,128/78`). **Export** writes the X-ray and clinical result
 together.
 
+**Patient page (first page):** this holds the information for the hospital report.
+
+* **Fields:** patient ID / MRN, name, sex, date of birth (the age is calculated from it), phone, location / address, height and weight.
+* **Visit fields:** hospital (the default is set in Settings), department / ward, referring physician, exam date, and visit type (outpatient / inpatient / emergency).
+* **History fields:** chief complaint, medical history and allergies.
+* **Age:** the patient's age is also a CURB-65 severity sign for pneumonia (age ≥ 65).
+
+**Case data (dataset):** every case is stored as **one JSON file**, `<dataset>/<case id>.json`. The default folder is `./dataset` next to the app, and you can change it in Settings.
+
+* **What it contains:** patient, X-ray (file path, SHA-256, all 18 scores), step-2 inputs, analysis (scores, step parts, severity, candidates), review and saved report files.
+* **When it's saved:**
+  * with every saved report
+  * automatically on **Exit**, **New Patient** or **Open Saved Case**, and when the window is closed with ✕
+* **Unsaved report:** if the report hasn't been saved, the app asks first; the case data is saved either way.
+* **Without repeat:**
+  * a case keeps its id, so saving again updates its own file (revision + 1)
+  * unchanged data isn't written again
+* **Without fail:**
+  * every write goes to a temporary file, is flushed to disk, renamed into place and read back to verify
+  * if the dataset folder isn't writable, the record goes to `%APPDATA%\PneumoLens AI\dataset_fallback` and the app says so
+  * if nothing can be written, Exit and New Patient refuse to discard the case unless you explicitly confirm
+* **Privacy:** `dataset/` is in `.gitignore`. Patient data must never be committed.
+
+**Open Saved Case** (landing page, patient page, step 4) loads a case from the dataset folder for review. It restores the patient, X-ray (image if the file still exists, otherwise the stored scores), clinical data and review. Editing it updates the same file. Older exported JSON reports can be opened too.
+
 **Step 3, Final Report** (Next: Final Report, or step 3 in the stepper) combines both steps.
 
 * **Assessment:** shows the most likely disease with its combined match. Next to it are the X-ray part (step 1) and the clinical part (step 2), each with its reasons:
@@ -54,13 +79,8 @@ together.
   * the 7-disease differential (combined, step 1, step 2, coverage)
   * the follow-up and the clinician review
 * **Review:** enter a patient ID, notes and the reviewer, then **Sign report**. Signing needs the reviewer's name and the confirmation tick. Any later edit removes the signature, and the reviewer's name is remembered.
-* **Save Report** (Ctrl+S) saves as:
-  * **PDF**: printed by WebView2 from the preview, so no extra library is needed.
-  * **HTML**: a single self-contained file.
-  * **JSON**: all the data.
-  * **CSV**: the values.
-* **Print** (Ctrl+P) prints the report only.
-* **New Patient** clears everything after a confirmation.
+* **Save Report** (Ctrl+S) saves the report where the doctor chooses, as **PDF** (printed by WebView2 from the preview) or **DOCX** (Word, via python-docx). The case data is saved to the dataset folder at the same time.
+* **New Patient** saves the case data, then clears everything. If the report hasn't been saved, it asks first.
 * **Example:** `design/screenshots/example_report.pdf`.
 
 **X-ray outputs used:**
@@ -255,6 +275,7 @@ Output: `dist\standalone\PneumoLensAI\` (ship the whole folder, or the zip).
 ```bash
 python tests/test_engine.py     # scores vs reference
 python tests/test_clinical.py   # weight.json + step-2 scoring
+python tests/test_dataset.py    # case data: one file per case, no repeats, atomic writes, fallback, reopen
 python tests/test_ui.py         # full click-through (window flashes on Windows)
 ```
 

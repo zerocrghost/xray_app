@@ -62,7 +62,7 @@ function showLanding() {
   document.body.classList.add("landing-on");
 }
 
-// workspace pages: 1 = X-ray analysis, 2 = symptoms & labs
+// workspace pages: 0 = patient, 1 = X-ray analysis, 2 = symptoms & labs, 3 = final report
 let step = 1;
 
 const canReport = () => !!state.result || Clinical.hasInput();
@@ -71,23 +71,29 @@ function showStep(n) {
   if (state.busy || (n > 1 && !state.ready) || (n === 3 && !canReport())) return;
   showWorkspace();
   step = n;
-  for (const k of [1, 2, 3]) $("page" + k).hidden = n !== k;
+  for (const k of [0, 1, 2, 3]) $("page" + k).hidden = n !== k;
   if (n === 1) fitView();
   else if (n === 2) Clinical.renderLeft();
+  else if (n === 3) Patient.summary();
   renderStepper();
   updateButtons();
   if (n === 3) Report.open();       // recomputed from the current step-1 and step-2 data
 }
 
 function renderStepper() {
-  const s1 = $("step1"), s2 = $("step2"), s3 = $("step3");
+  const s0 = $("step0"), s1 = $("step1"), s2 = $("step2"), s3 = $("step3");
+  const done0 = Patient.hasIdentity();
   const done1 = !!state.result, done2 = Clinical.hasResult(), done3 = Report.ready() && !Report.unsaved();
+  s0.className = "step" + (step === 0 ? " active" : done0 ? " done" : "");
+  s0.querySelector(".num").textContent = step !== 0 && done0 ? "✓" : "1";
+  $("stepLine0").classList.toggle("done", done0);
+  s0.title = step === 0 ? "" : "Patient information";
   s1.className = "step" + (step === 1 ? " active" : done1 ? " done" : "");
   s2.className = "step" + (step === 2 ? " active" : done2 ? " done" : "");
   s3.className = "step" + (step === 3 ? " active" : done3 ? " done" : "");
-  s1.querySelector(".num").textContent = step !== 1 && done1 ? "✓" : "1";
-  s2.querySelector(".num").textContent = step !== 2 && done2 ? "✓" : "2";
-  s3.querySelector(".num").textContent = step !== 3 && done3 ? "✓" : "3";
+  s1.querySelector(".num").textContent = step !== 1 && done1 ? "✓" : "2";
+  s2.querySelector(".num").textContent = step !== 2 && done2 ? "✓" : "3";
+  s3.querySelector(".num").textContent = step !== 3 && done3 ? "✓" : "4";
   $("stepLine1").classList.toggle("done", done1);
   $("stepLine2").classList.toggle("done", done2);
   s3.title = canReport() ? (step === 3 ? "" : "Final report") : "Analyze an X-ray or enter clinical data first";
@@ -124,9 +130,12 @@ function updateButtons() {
   $("btnNext2").disabled = !idle || !canReport();
   $("step3").disabled = !idle || !canReport();
   $("btnSave").disabled = !idle || !Report.ready();
-  $("btnPrint").disabled = !idle || !Report.ready();
   $("btnNewPatient").disabled = state.busy;
   $("btnBack3").disabled = state.busy;
+  // patient page / saved cases
+  for (const id of ["btnLandCase", "btnOpenCase0", "btnOpenCase3"]) $(id).disabled = !idle;
+  $("btnNewPatient0").disabled = state.busy;
+  $("step0").disabled = state.busy;
 }
 
 // Wraps every Python call: busy flag, buttons, error toast.
@@ -290,6 +299,20 @@ function showImage(data) {
   updateButtons();
 }
 
+function restoreXray(x) {
+  if (x.preview) showImage({ info: x.info, preview: x.preview });
+  if (x.result) {
+    state.result = x.result;
+    state.exported = true;
+    $("stFile").textContent = (x.info && x.info.file) || x.result.file || "";
+    setStatus("ok", "Saved case opened");
+    renderResults();
+    renderStepper();
+    Clinical.xrayChanged();
+    updateButtons();
+  }
+}
+
 function clearImage() {
   state.image = null;
   state.result = null;
@@ -428,10 +451,19 @@ function settingsExample() {
   $("setExample").innerHTML = `${Report.ready() ? "Current report" : "Example"}: cut-off ${Math.round(cut * 100)}% → ` + parts.join(" · ");
 }
 
+function showDatasetPath(r) {
+  const el2 = $("setDatasetPath");
+  el2.className = "s-path";
+  el2.textContent = r && r.dataset_path ? "→ " + r.dataset_path : "";
+}
+
 async function openSettings() {
   const r = await api().get_settings();
   $("setRatio").value = Math.round((r.candidate_ratio ?? 0.5) * 100);
   $("setMax").value = r.max_candidates ?? 3;
+  $("setDataset").value = r.dataset_dir || r.dataset_default || "./dataset";
+  $("setHospital").value = r.hospital || "";
+  showDatasetPath(r);
   settingsExample();
   $("setModal").hidden = false;
   $("setRatio").focus();
@@ -440,10 +472,18 @@ async function openSettings() {
 function closeSettings() { $("setModal").hidden = true; }
 
 async function saveSettings() {
-  const r = await api().set_settings({ candidate_ratio: +$("setRatio").value / 100, max_candidates: +$("setMax").value });
-  if (!r.ok) { toast(r.error, true); return; }
+  const r = await api().set_settings({ candidate_ratio: +$("setRatio").value / 100, max_candidates: +$("setMax").value,
+                                      dataset_dir: $("setDataset").value.trim(), hospital: $("setHospital").value.trim() });
+  if (!r.ok) {                                         // e.g. a dataset folder that cannot be written
+    $("setDatasetPath").className = "s-path err";
+    $("setDatasetPath").textContent = r.error;
+    toast(r.error, true);
+    return;
+  }
   closeSettings();
-  toast(`Settings saved: candidates ≥ ${Math.round(r.candidate_ratio * 100)}% of the top, at most ${r.max_candidates}.`);
+  Patient.setHospitalDefault(r.hospital);
+  toast(`Settings saved · candidates ≥ ${Math.round(r.candidate_ratio * 100)}% of the top, at most ${r.max_candidates} · ` +
+        `case data → ${r.dataset_path}`);
   if (step === 3) Report.open();                     // apply to the open report right away
 }
 
@@ -454,7 +494,16 @@ $("setSave").onclick = saveSettings;
 $("setReset").onclick = () => {
   $("setRatio").value = SET_DEFAULTS.candidate_ratio * 100;
   $("setMax").value = SET_DEFAULTS.max_candidates;
+  // the dataset folder and the hospital are NOT reset here: the storage location only changes when set explicitly
   settingsExample();
+};
+$("setBrowse").onclick = async () => {
+  const r = await api().browse_folder();
+  if (r && r.ok && !r.cancelled) { $("setDataset").value = r.path; showDatasetPath({ dataset_path: r.path }); }
+};
+$("setOpenDs").onclick = async () => {
+  const r = await api().open_dataset_folder();
+  if (r && !r.ok) toast(r.error, true);
 };
 $("setRatio").addEventListener("input", settingsExample);
 $("setMax").addEventListener("input", settingsExample);
@@ -473,23 +522,39 @@ function confirmBox({ title, text, ok, onOk }) {
   $("exitConfirm").focus();
 }
 
-function openExitModal() {
-  const unsaved = (state.result || Clinical.hasResult() || Report.ready()) && !state.exported;
-  confirmBox({
-    title: "Exit PneumoLens AI?",
-    text: unsaved ? "The current analysis has not been exported. It will be lost when the app closes."
-                  : "Are you sure you want to close the application?",
-    ok: "Exit",
-    onOk: () => api().exit(),
-  });
+async function openExitModal() {
+  if (!$("exitModal").hidden) return;
+  const st = await Case.status();
+  const exitNow = async (force) => {
+    const r = await api().exit(!!force);
+    if (r && r.ok === false) {
+      confirmBox({ title: "Could not save the case data", ok: "Exit anyway",
+        text: `${r.error} The app did NOT close. Exit anyway? The data of this case will be lost.`,
+        onOk: () => exitNow(true) });
+    }
+  };
+  if (st.has_data) {
+    confirmBox({
+      title: "Exit PneumoLens AI?",
+      text: st.reports.length
+        ? "The case data is saved to the dataset folder automatically."
+        : "The report has not been saved. Exit without saving the report? The case data is saved to the dataset folder automatically.",
+      ok: "Exit",
+      onOk: () => exitNow(false),
+    });
+    return;
+  }
+  confirmBox({ title: "Exit PneumoLens AI?", text: "Are you sure you want to close the application?", ok: "Exit",
+               onOk: () => exitNow(false) });
 }
+
 
 function closeExitModal() {
   $("exitModal").hidden = true;
 }
 
 for (const b of document.querySelectorAll("[data-exit]")) b.onclick = openExitModal;
-$("exitCancel").onclick = closeExitModal;
+$("exitCancel").onclick = () => { closeExitModal(); api().close_cancelled(); };
 $("exitConfirm").onclick = () => { const f = modalAction; closeExitModal(); if (f) f(); };
 $("exitModal").addEventListener("mousedown", (e) => { if (e.target === e.currentTarget) closeExitModal(); });
 
@@ -501,7 +566,12 @@ $("empty").addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); $("empty").click(); }
 });
 
-$("btnStart").onclick = showWorkspace;
+$("btnStart").onclick = () => showStep(0);
+$("btnNext0").onclick = () => showStep(1);
+$("step0").onclick = () => showStep(0);
+$("btnLandCase").onclick = () => Case.open();
+$("btnOpenCase0").onclick = () => Case.open();
+$("btnNewPatient0").onclick = () => Case.newPatient();
 $("btnLandOpen").onclick = uploadImage;
 $("btnHome").onclick = showLanding;
 $("btnUpload").onclick = uploadImage;
@@ -560,15 +630,18 @@ document.addEventListener("keydown", (e) => {
   }
   if (e.ctrlKey && k === "t") { e.preventDefault(); toggleTheme(); return; }
   if (onLanding()) {            // landing page: only Enter (start) and Ctrl+O (open) do something
-    if (e.key === "Enter" && !e.ctrlKey) { e.preventDefault(); showWorkspace(); }
+    if (e.key === "Enter" && !e.ctrlKey) { e.preventDefault(); showStep(0); }
     else if (e.ctrlKey && k === "o") { e.preventDefault(); uploadImage(); }
     else if ((e.ctrlKey && (k === "r" || k === "s")) || e.key === "F5") e.preventDefault();
     return;
   }
-  if (e.ctrlKey && k === "p" && step !== 3) { e.preventDefault(); return; }   // only the report is printable
+  if (e.ctrlKey && k === "p") { e.preventDefault(); return; }                  // no printing of the app window
+  if (step === 0) {             // patient page: typing stays normal
+    if ((e.ctrlKey && "rso".includes(k)) || e.key === "F5") e.preventDefault();
+    return;
+  }
   if (step === 3) {             // final report: typing in the fields stays normal
     if (e.ctrlKey && k === "s") { e.preventDefault(); Report.save(); }
-    else if (e.ctrlKey && k === "p") { e.preventDefault(); Report.print(); }
     else if ((e.ctrlKey && (k === "r" || k === "o")) || e.key === "F5") e.preventDefault();
     return;
   }
@@ -607,6 +680,7 @@ async function start() {
   }
   state.ready = true;
   Clinical.init(r.clinical);
+  try { Patient.init(await api().get_settings()); } catch (e) { Patient.init({}); }
   state.labels = r.shown_labels;
   state.bands = r.bands;
   state.device = r.device;

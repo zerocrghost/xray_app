@@ -35,6 +35,7 @@
           The model runs on this computer, so images never leave it.</p>
         <div class="l-cta">
           <button class="btn primary big" id="btnStart"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>Start New Analysis<span class="kbd">Enter</span></button>
+          <button class="btn big" id="btnLandCase" disabled title="Open a case from the dataset folder to review it"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open Saved Case…</button>
           <button class="btn big" id="btnLandOpen" disabled><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Open X-ray Image…<span class="kbd">Ctrl+O</span></button>
         </div>
         <div class="l-facts">
@@ -108,11 +109,60 @@
     </div>
 
     <div class="stepper">
-      <button class="step active" id="step1" data-go="1"><div class="num">1</div><div class="t"><b>X-Ray Analysis</b><span id="step1Sub">Image · 11 pathologies</span></div></button>
+      <button class="step" id="step0" data-go="0"><div class="num">1</div><div class="t"><b>Patient</b><span id="step0Sub">Information for the report</span></div></button>
+      <div class="step-line" id="stepLine0"></div>
+      <button class="step active" id="step1" data-go="1"><div class="num">2</div><div class="t"><b>X-Ray Analysis</b><span id="step1Sub">Image · 11 pathologies</span></div></button>
       <div class="step-line" id="stepLine1"></div>
-      <button class="step" id="step2" data-go="2"><div class="num">2</div><div class="t"><b>Symptoms &amp; Labs</b><span id="step2Sub">Clinical data · 7 diseases</span></div></button>
+      <button class="step" id="step2" data-go="2"><div class="num">3</div><div class="t"><b>Symptoms &amp; Labs</b><span id="step2Sub">Clinical data · 7 diseases</span></div></button>
       <div class="step-line" id="stepLine2"></div>
-      <button class="step" id="step3" data-go="3"><div class="num">3</div><div class="t"><b>Final Report</b><span id="step3Sub">Review &amp; export</span></div></button>
+      <button class="step" id="step3" data-go="3"><div class="num">4</div><div class="t"><b>Final Report</b><span id="step3Sub">Review &amp; export</span></div></button>
+    </div>
+
+    <!-- ========================================================== PATIENT (first page) -->
+    <div class="page" id="page0" hidden>
+    <div class="main">
+      <div class="panel pt-panel">
+        <div class="ph">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+          <h2>Patient Information</h2><span class="sub">· for the hospital report</span>
+          <div class="spacer"></div><span class="sub" id="ptCase"></span>
+        </div>
+        <div class="pgrid" id="ptForm1">
+          <label class="fl"><span>Patient ID / MRN</span><input data-p="patient_id" maxlength="40" autocomplete="off" spellcheck="false" placeholder="e.g. 2026-004217"></label>
+          <label class="fl"><span>Name</span><input data-p="name" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Family name, given name"></label>
+          <div class="fl"><span>Sex</span><div class="seg pseg" data-p="sex"><button data-v="Male">Male</button><button data-v="Female">Female</button><button data-v="Other">Other</button></div></div>
+          <label class="fl"><span>Date of birth</span><input type="date" data-p="dob"></label>
+          <label class="fl"><span>Age (years)</span><input data-p="age" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="calculated from the date of birth"></label>
+          <label class="fl"><span>Phone</span><input data-p="phone" maxlength="30" autocomplete="off" spellcheck="false"></label>
+          <label class="fl span2"><span>Location / address</span><input data-p="location" maxlength="160" autocomplete="off" spellcheck="false" placeholder="City, district, address"></label>
+          <label class="fl"><span>Height (cm)</span><input data-p="height" inputmode="decimal" maxlength="5" autocomplete="off"></label>
+          <label class="fl"><span>Weight (kg)</span><input data-p="weight" inputmode="decimal" maxlength="5" autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="panel pt-panel">
+        <div class="ph">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M10 9h4M12 7v4"/></svg>
+          <h2>Visit &amp; History</h2>
+        </div>
+        <div class="pgrid" id="ptForm2">
+          <label class="fl"><span>Hospital / facility</span><input data-p="hospital" maxlength="120" autocomplete="off" spellcheck="false"></label>
+          <label class="fl"><span>Department / ward</span><input data-p="department" maxlength="80" autocomplete="off" spellcheck="false"></label>
+          <label class="fl"><span>Referring physician</span><input data-p="referring" maxlength="80" autocomplete="off" spellcheck="false"></label>
+          <label class="fl"><span>Exam date</span><input type="date" data-p="exam_date"></label>
+          <div class="fl span2"><span>Visit type</span><div class="seg pseg" data-p="visit"><button data-v="Outpatient">Outpatient</button><button data-v="Inpatient">Inpatient</button><button data-v="Emergency">Emergency</button></div></div>
+          <label class="fl span2"><span>Chief complaint</span><textarea data-p="complaint" rows="2" maxlength="500"></textarea></label>
+          <label class="fl span2"><span>Medical history / comorbidities</span><textarea data-p="history" rows="2" maxlength="1000" placeholder="e.g. diabetes, heart failure, previous TB"></textarea></label>
+          <label class="fl span2"><span>Allergies</span><input data-p="allergies" maxlength="200" autocomplete="off" spellcheck="false"></label>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnOpenCase0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open Saved Case</button>
+      <button class="btn" id="btnNewPatient0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Patient</button>
+      <div class="spacer"></div>
+      <button class="btn next" id="btnNext0">Next: X-Ray Analysis<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <button class="btn exit" data-exit><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>Exit</button>
+    </div>
     </div>
 
     <!-- ========================================================== STEP 1 -->
@@ -263,7 +313,7 @@
 
           <div class="sec">Patient &amp; review</div>
           <div class="frm">
-            <label class="fl"><span>Patient ID</span><input id="rPatient" maxlength="40" placeholder="optional, e.g. ANON-0042" autocomplete="off" spellcheck="false"></label>
+            <div class="rpat" id="rPatient" title="Edit on the Patient page"></div>
             <label class="fl"><span>Clinician notes</span><textarea id="rNotes" rows="3" maxlength="2000" placeholder="Findings, plan, follow-up…"></textarea></label>
             <div class="frow">
               <label class="fl grow"><span>Reviewed by</span><input id="rReviewer" maxlength="80" placeholder="Name" autocomplete="off" spellcheck="false"></label>
@@ -275,10 +325,9 @@
           <div class="sec">Export format</div>
           <div class="fmt" id="rFmt">
             <button data-fmt="pdf" class="on">PDF<small>Report</small></button>
-            <button data-fmt="html">HTML<small>Report</small></button>
-            <button data-fmt="json">JSON<small>Full data</small></button>
-            <button data-fmt="csv">CSV<small>Values</small></button>
+            <button data-fmt="docx">DOCX<small>Word report</small></button>
           </div>
+          <div class="dsnote" id="rData"></div>
           <div class="opts">
             <label class="ck"><input type="checkbox" data-opt="image" checked><span>X-ray image</span></label>
             <label class="ck"><input type="checkbox" data-opt="factors" checked><span>Reasons (step 1 &amp; 2)</span></label>
@@ -292,8 +341,8 @@
     <div class="actions">
       <button class="btn" id="btnBack3"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Back to Symptoms &amp; Labs</button>
       <button class="btn primary" id="btnSave"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Save Report<span class="kbd">Ctrl+S</span></button>
-      <button class="btn" id="btnPrint"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></svg>Print<span class="kbd">Ctrl+P</span></button>
       <div class="spacer"></div>
+      <button class="btn" id="btnOpenCase3"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open Saved Case</button>
       <button class="btn next" id="btnNewPatient"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New Patient</button>
       <button class="btn exit" data-exit><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>Exit</button>
     </div>
@@ -328,8 +377,16 @@
     <div class="s-row"><label for="setMax">Show at most</label>
       <input type="number" id="setMax" min="1" max="7" step="1"><span>candidates</span></div>
     <div class="s-example" id="setExample"></div>
+    <div class="s-sec">Data storage · case data (dataset)</div>
+    <p class="s-help">Every case is saved as one JSON file in this folder: when a report is saved, and automatically on Exit, New Patient or Open Saved Case. Saving the same case again updates its file instead of adding another one. A relative path is relative to the app folder.</p>
+    <div class="s-row"><label for="setDataset">Dataset folder</label>
+      <input id="setDataset" class="s-text" spellcheck="false" autocomplete="off"><button class="btn sm" id="setBrowse">Browse…</button><button class="btn sm" id="setOpenDs" title="Open the folder in Explorer">Open</button></div>
+    <div class="s-path" id="setDatasetPath"></div>
+    <div class="s-sec">Report</div>
+    <div class="s-row"><label for="setHospital">Default hospital / facility</label>
+      <input id="setHospital" class="s-text" maxlength="120" spellcheck="false" autocomplete="off" placeholder="filled in for every new patient"></div>
     <div class="m-actions">
-      <button class="btn" id="setReset">Defaults</button><div class="spacer"></div>
+      <button class="btn" id="setReset" title="Reset the candidate rule (the dataset folder is not changed)">Defaults</button><div class="spacer"></div>
       <button class="btn" id="setCancel">Cancel<span class="kbd">Esc</span></button>
       <button class="btn primary" id="setSave">Save</button>
     </div>
@@ -353,4 +410,5 @@
 <script src="app.js"></script>
 <script src="clinical.js"></script>
 <script src="report.js"></script>
+<script src="patient.js"></script>
 </body></html>

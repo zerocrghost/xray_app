@@ -10,6 +10,7 @@ const Report = (() => {
   let fmt = "pdf";
   let zoom = null;         // null = fit to width
   let saved = false;
+  let reports = [];        // report files saved for this case (PDF / DOCX)
   let selId = null;        // candidate whose reasons / severity the side panel shows
 
   const sevCls = (g) => ({ Severe: "severe", Moderate: "moderate", Mild: "mild" }[g] || "na");
@@ -17,12 +18,14 @@ const Report = (() => {
 
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const pct = (x) => Math.round(x * 100) + "%";
+  // a step's own score; "neutral" when it carries no real evidence (its % would only be the 20 % prior)
+  const partTxt = (part, none) => (!part.used ? none : part.neutral ? "neutral" : pct(part.match));
+  const NEUTRAL_TIP = "No finding clearly for or against this disease in this step, so it does not move the final score.";
   const when = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "—");
   const opts = () => Object.fromEntries([...document.querySelectorAll("[data-opt]")].map((i) => [i.dataset.opt, i.checked]));
 
   function review() {
     return {
-      patient_id: $("rPatient").value.trim(),
       notes: $("rNotes").value.trim(),
       reviewer: $("rReviewer").value.trim(),
       agreed: $("rAgree").checked,
@@ -32,6 +35,7 @@ const Report = (() => {
 
   // ---------------------------------------------------------------- open / refresh
   async function open() {
+    await Case.push();                          // the latest patient / clinical edits first
     const r = await call(() => api().final_report(Clinical.inputs(), review()), "Preparing the report…");
     if (!r) return;
     R = r;
@@ -39,8 +43,10 @@ const Report = (() => {
       lastId = R.id;
       signed = "";
       saved = false;
+      reports = [];
       $("rNotes").value = "";
       $("rAgree").checked = false;
+      showData(null);
     }
     if (!$("rReviewer").value && r.reviewer_default) $("rReviewer").value = r.reviewer_default;
     if (!R.candidates.ids.includes(selId)) selId = R.candidates.ids[0];
@@ -63,7 +69,7 @@ const Report = (() => {
   function whyCol(title, part, reasons, emptyText) {
     if (!part.used) return `<div class="col"><h3>${title}</h3><div class="none">${emptyText}</div></div>`;
     const list = reasonList(reasons.for, "✓", "y") + reasonList(reasons.against, "✗", "n");
-    return `<div class="col"><h3>${title}<em>${pct(part.match)}</em></h3>` +
+    return `<div class="col"><h3>${title}<em title="${part.neutral ? NEUTRAL_TIP : ""}">${partTxt(part, "")}</em></h3>` +
       (list ? `<ul>${list}</ul>` : `<div class="none">No finding clearly for or against this disease.</div>`) + `</div>`;
   }
 
@@ -88,11 +94,18 @@ const Report = (() => {
     h += `<div class="p-head"><img src="logo.svg" alt=""><div><h1>Chest X-Ray &amp; Clinical AI Report</h1>` +
       `<div class="s">PneumoLens AI · AI-assisted decision support for 7 lung diseases</div></div>` +
       `<div class="id"><b>${esc(R.id)}</b>Generated ${esc(when(R.generated))}</div></div>`;
-    const meta = [["Patient ID", rv.patient_id || "—"], ["Study date", p.study_date || "—"], ["View", p.view || "—"],
-      ["X-ray file", p.file || "not analyzed"], ["Models", (R.xray ? "densenet121 · " : "") + R.weights],
+    const ageSex = [p.age !== undefined && p.age !== null ? `${p.age} y` : "", p.sex || ""].filter(Boolean).join(" · ");
+    const hw = [p.height ? `${p.height} cm` : "", p.weight ? `${p.weight} kg` : ""].filter(Boolean).join(" · ");
+    const meta = [["Patient ID", p.patient_id || "—"], ["Name", p.name || "—"], ["Age · sex", ageSex || "—"],
+      ["Date of birth", p.dob || "—"], ["Location", p.location || "—"], ["Phone", p.phone || "—"],
+      ["Hospital", [p.hospital, p.department].filter(Boolean).join(" · ") || "—"], ["Referring physician", p.referring || "—"],
+      ["Exam date", [p.exam_date, p.visit].filter(Boolean).join(" · ") || "—"], ["Height · weight", hw || "—"],
+      ["X-ray", p.file ? `${p.file}${p.view ? " · " + p.view : ""}` : "not analyzed"], ["Models", (R.xray ? "densenet121 · " : "") + R.weights],
       ["Reviewed by", rv.reviewer || "—"], ["Status", signed ? "Signed " + when(signed) : "Not signed"],
       ["Data", `${R.xray ? "X-ray" : "no X-ray"} · ${R.clinical ? R.clinical.entered + " clinical inputs" : "no clinical data"}`]];
     h += `<div class="p-meta">${meta.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>`;
+    const hist = [["Chief complaint", p.complaint], ["History", p.history], ["Allergies", p.allergies]].filter(([, v]) => v);
+    if (hist.length) h += `<div class="p-text" style="margin:2px 0 4px">${hist.map(([k, v]) => `<b>${k}:</b> ${esc(v)}`).join(" &nbsp;·&nbsp; ")}</div>`;
 
     // integrated assessment: one clear candidate, or 2-3 close ones (rule from Settings)
     const C = R.candidates, cands = candidates();
@@ -102,8 +115,8 @@ const Report = (() => {
       `<b>${esc(d.name)} — ${pct(d.match)}</b>` +
       (i === 0 && cands.length === 1 ? `<div class="sub">Clearly ahead: the next disease, ${others[0] ? esc(others[0].name) + " " + pct(others[0].match) : "—"}, ` +
         `scores below ${Math.round(C.ratio * 100)} % of this score (cut-off ${pct(C.cutoff)}).</div>` : "") +
-      `<div class="p-parts"><span>Step 1 · X-ray: ${d.parts.xray.used ? pct(d.parts.xray.match) : "not analyzed"}</span>` +
-      `<span>Step 2 · Symptoms &amp; labs: ${d.parts.clinical.used ? pct(d.parts.clinical.match) : "no data"}</span>` +
+      `<div class="p-parts"><span>Step 1 · X-ray: ${partTxt(d.parts.xray, "not analyzed")}</span>` +
+      `<span>Step 2 · Symptoms &amp; labs: ${partTxt(d.parts.clinical, "no data")}</span>` +
       `<span>Data coverage: ${pct(d.coverage)}</span></div>` +
       (d.low_confidence ? `<div class="p-note">Low confidence: less than 35 % of the weighted data for this disease was available.</div>` : "") +
       `</div><div class="p-badges"><div class="badge ${d.level}">${d.level === "MODERATE" ? "MOD" : d.level} MATCH</div>` +
@@ -184,8 +197,8 @@ const Report = (() => {
     h += `<div class="p-sec">3 · Differential diagnosis (7 lung diseases)</div>` +
       `<table><tr><th>Disease</th><th class="r">Combined</th><th class="r">Step 1 · X-ray</th><th class="r">Step 2 · Clinical</th><th class="r">Coverage</th><th>Match</th><th>Severity</th></tr>` +
       R.diseases.map((d) => `<tr class="${R.candidates.ids.includes(d.id) ? "top" : ""}"><td>${esc(d.name)}${d.low_confidence ? ' <span style="color:#a8650f">(low data)</span>' : ""}</td>` +
-        `<td class="r">${pct(d.match)}</td><td class="r">${d.parts.xray.used ? pct(d.parts.xray.match) : "—"}</td>` +
-        `<td class="r">${d.parts.clinical.used ? pct(d.parts.clinical.match) : "—"}</td><td class="r">${pct(d.coverage)}</td>` +
+        `<td class="r">${pct(d.match)}</td><td class="r">${partTxt(d.parts.xray, "—")}</td>` +
+        `<td class="r">${partTxt(d.parts.clinical, "—")}</td><td class="r">${pct(d.coverage)}</td>` +
         `<td><span class="f ${d.level}">${d.level === "MODERATE" ? "MOD" : d.level}</span></td>` +
         `<td>${esc(d.severity.grade)}</td></tr>`).join("") + `</table>` +
       `<div class="p-text" style="margin-top:5px;font-size:10px;color:#6b7489">Match scores are independent (diseases can coexist) and ` +
@@ -239,18 +252,21 @@ const Report = (() => {
       const li = (f, mark, cls) => `<li class="${cls}"><i>${mark}</i><span title="${esc(f.why)}">${esc(f.label.replace("X-ray: ", ""))}` +
         `${f.value ? " · " + esc(f.value) : ""}</span></li>`;
       const items = reasons.for.slice(0, 3).map((f) => li(f, "✓", "y")).join("") + reasons.against.slice(0, 2).map((f) => li(f, "✗", "n")).join("");
-      return `<div class="wcard"><div class="wt">${title}<b>${pct(part.match)}</b></div>` +
+      return `<div class="wcard"><div class="wt">${title}<b title="${part.neutral ? NEUTRAL_TIP : ""}">${partTxt(part, "")}</b></div>` +
         (items ? `<ul>${items}</ul>` : `<div class="none">No finding clearly for or against.</div>`) + `</div>`;
     };
     $("rWhy").innerHTML = card("Step 1 · X-ray", parts.xray, sel.reasons.xray, "No X-ray analyzed — go to step 1 to add it.") +
       card("Step 2 · Clinical", parts.clinical, sel.reasons.clinical, "No symptoms or labs entered — add them in step 2.");
     const c = R.clinical;
     const stats = [
-      ["X-ray flagged", R.xray ? R.xray.flagged : "—", R.xray ? `/ ${R.xray.lung.length}` : ""],
+      ["X-ray ≥ 50 %", R.xray ? R.xray.flagged : "—", R.xray ? `/ ${R.xray.lung.length}` : ""],
       ["Values abnormal", c ? c.abnormal : "—", c ? `/ ${c.rows.filter((x) => x.flag).length}` : ""],
       ["Symptoms", c ? c.present.length : "—", c ? "present" : ""],
     ];
-    $("rStats").innerHTML = stats.map(([k, b, s]) => `<div class="stat"><span>${k}</span><b>${b}</b><small>${s}</small></div>`).join("");
+    const tips = {"X-ray ≥ 50 %": "Lung-related X-ray outputs at or above the model threshold (50 %). Values just above 50 % are often the model's background level, so this is not the same as clearly abnormal.",
+                  "Values abnormal": "Vital signs and lab values outside their reference range / values that have a range.",
+                  "Symptoms": "Symptoms marked as present in step 2."};
+    $("rStats").innerHTML = stats.map(([k, b, s]) => `<div class="stat" title="${tips[k] || ""}"><span>${k}</span><b>${b}</b><small>${s}</small></div>`).join("");
     const chip = $("rSignChip");
     chip.className = "chip " + (signed ? "ok" : "busy");
     chip.querySelector("span").textContent = signed ? "Signed" : "Not signed";
@@ -297,55 +313,63 @@ const Report = (() => {
 
   function edited() {
     if (signed) { signed = ""; renderSide(); toast("The report changed after signing — sign it again.", true); status(); }
-    saved = false;
     clearTimeout(edited.t);
     edited.t = setTimeout(render, 250);
+    if (typeof Case !== "undefined") Case.touch();
   }
 
   async function save() {
     if (!R || state.busy) return;
     render();                                   // the PDF prints #printRoot, so it must be current
-    let html = null;
-    if (fmt === "html") {
-      const copy = $("rPaper").cloneNode(true);
-      copy.removeAttribute("id");
-      copy.style.zoom = "";
-      html = copy.outerHTML;
+    await Case.push();                          // Python saves the latest case data with the report
+    const r = await call(() => api().save_report(fmt, null, review(), opts()), `Saving ${fmt.toUpperCase()} report…`);
+    if (r && !r.cancelled) {
+      saved = true;
+      state.exported = true;
+      reports.push({ format: fmt, path: r.path });
+      const d = r.data || {};
+      showData(d);
+      if (d.ok === false) toast(`Report saved: ${r.path} — but the CASE DATA could not be saved: ${d.error}`, true);
+      else toast(`Report saved: ${r.path} · ${Case.savedText(d)}`);
+      renderStepper();
     }
-    const r = await call(() => api().save_report(fmt, html, review()), `Saving ${fmt.toUpperCase()} report…`);
-    if (r && !r.cancelled) { saved = true; state.exported = true; toast("Report saved: " + r.path); }
     status();
   }
 
-  function print() {
-    if (!R) return;
-    render();
-    window.print();
+  function showData(d) {
+    const box = $("rData");
+    box.className = "dsnote" + (d && d.ok === false ? " err" : "");
+    box.replaceChildren();
+    if (!d) return;
+    if (d.ok === false) { box.append(el("b", null, "Case data NOT saved: "), d.error || ""); return; }
+    const t = Case.savedText(d);
+    if (t) box.append(el("b", null, "✓ "), t);
   }
 
-  function newPatient() {
-    confirmBox({
-      title: "Start a new patient?",
-      text: "This clears the X-ray, the symptoms & lab data and the report." + (R && !saved ? " The current report has not been saved." : ""),
-      ok: "New Patient",
-      onOk: async () => {
-        await api().new_patient();
-        clearImage();
-        await Clinical.clear();
-        R = null; lastId = null; signed = ""; saved = false;
-        for (const id of ["rPatient", "rNotes"]) $(id).value = "";
-        $("rAgree").checked = false;
-        $("rPaper").replaceChildren();
-        $("printRoot").replaceChildren();
-        state.exported = false;
-        showStep(1);
-        toast("Ready for a new patient.");
-      },
-    });
+  // New Patient: forget this case's report state
+  function reset() {
+    R = null; lastId = null; signed = ""; saved = false; reports = []; selId = null;
+    $("rNotes").value = "";
+    $("rAgree").checked = false;
+    $("rPaper").replaceChildren();
+    $("printRoot").replaceChildren();
+    showData(null);
+  }
+
+  // Open Saved Case: restore the review of that case (it keeps its id, so open() does not clear it)
+  function load(rv, caseId, savedReports) {
+    reset();
+    lastId = caseId;
+    $("rNotes").value = rv.notes || "";
+    $("rReviewer").value = rv.reviewer || "";
+    $("rAgree").checked = !!rv.agreed;
+    signed = rv.signed_at || "";
+    reports = savedReports.slice();
+    saved = reports.length > 0;
   }
 
   // ---------------------------------------------------------------- wiring
-  for (const id of ["rPatient", "rNotes", "rReviewer"]) $(id).addEventListener("input", edited);
+  for (const id of ["rNotes", "rReviewer"]) $(id).addEventListener("input", edited);
   $("rAgree").addEventListener("change", edited);
   for (const i of document.querySelectorAll("[data-opt]")) i.addEventListener("change", render);
   $("rFmt").addEventListener("click", (e) => {
@@ -356,8 +380,8 @@ const Report = (() => {
   });
   $("rSign").onclick = sign;
   $("btnSave").onclick = save;
-  $("btnPrint").onclick = print;
-  $("btnNewPatient").onclick = newPatient;
+  $("btnNewPatient").onclick = () => Case.newPatient();
+  $("btnOpenCase3").onclick = () => Case.open();
   $("btnBack3").onclick = () => showStep(2);
   $("rZoomIn").onclick = () => { zoom = Math.min(2, (zoom ?? parseFloat($("rPaper").style.zoom || 1)) * 1.15); applyZoom(); };
   $("rZoomOut").onclick = () => { zoom = Math.max(0.3, (zoom ?? parseFloat($("rPaper").style.zoom || 1)) / 1.15); applyZoom(); };
@@ -365,8 +389,9 @@ const Report = (() => {
   window.addEventListener("resize", () => { if (R && !$("page3").hidden) applyZoom(); });
 
   return {
-    open, save, print, newPatient,
+    open, save, reset, load, review,
     ready: () => !!R,
+    savedReports: () => reports.slice(),
     scores: () => R.diseases.map((d) => [d.name, d.match]),
     unsaved: () => !!R && !saved,
     setFormat: (f) => { const b = document.querySelector(`#rFmt [data-fmt="${f}"]`); if (b) b.click(); },

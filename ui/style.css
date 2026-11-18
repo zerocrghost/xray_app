@@ -374,8 +374,29 @@ button.step:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .sevbox li.severe i{color:var(--red-t)}.sevbox li.moderate i{color:var(--amber-t)}
 .sevbox .none{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.45}
 
+/* patient page */
+.pt-panel{flex:1;min-width:0}
+.pgrid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;padding:16px 18px 18px;align-content:start}
+.pgrid .span2{grid-column:span 2}
+.pgrid .fl input,.pgrid .fl textarea{font-size:13.5px}
+.pgrid .fl input[type=date]{color-scheme:inherit}
+.pseg{align-self:flex-start;font-size:12.5px}
+.pseg button{padding:6px 14px}
+.rpat{font-size:12.5px;color:var(--sum-text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;line-height:1.5}
+.rpat b{color:var(--text)}
+.rpat a{color:var(--accent-text);cursor:pointer;text-decoration:underline}
+.dsnote{margin:8px 18px 0;font-size:11.5px;color:var(--dim);line-height:1.45}
+.dsnote b{color:var(--green-t);font-weight:600}
+.dsnote.err b{color:var(--red-t)}
+.l-cta{flex-wrap:wrap}
+
 /* settings dialog */
-.modal.smodal{width:min(540px,calc(100vw - 32px))}
+.s-text{flex:1;min-width:0;background:var(--input-bg);border:1px solid var(--line2);border-radius:8px;padding:7px 9px;font:inherit;font-size:13px;color:var(--text);outline:none;user-select:text}
+.s-text:focus{border-color:var(--accent)}
+.btn.sm{height:32px;padding:0 11px;font-size:12.5px}
+.s-path{font-size:11.5px;color:var(--dim);margin:5px 0 0 220px;font-family:var(--mono);word-break:break-all}
+.s-path.err{color:var(--red-t)}
+.modal.smodal{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow-y:auto}
 .s-sec{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 6px}
 .s-help{font-size:12.5px !important;line-height:1.5}
 .s-row{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px}

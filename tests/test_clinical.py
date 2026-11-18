@@ -204,6 +204,15 @@ def main():
     check("single-choice duration keeps one answer; 'none' is dropped when an exposure is chosen",
           r["values"]["duration"] == ["acute"] and r["values"]["exposure"] == ["biomass"], str(r["values"]))
 
+    # a step without real evidence is "neutral" (its own % is only the prior) and barely moves the final score
+    from app import _map_lab_names as _m
+    cb_in, _ = _m(json.loads((ROOT / "tests" / "cases" / "chronic_bronchitis_01.json").read_text(encoding="utf-8")), m)
+    xr02 = json.loads((ROOT / "tests" / "reference_scores.json").read_text(encoding="utf-8"))["02_pneumonia_case.jpg"]
+    cb = next(d for d in m.score(cb_in, xr02)["diseases"] if d["id"] == "chronic_bronchitis")
+    check("X-ray part without clear evidence is marked neutral; final ≈ clinical part",
+          cb["parts"]["xray"]["neutral"] and abs(cb["match"] - cb["parts"]["clinical"]["match"]) < 0.03,
+          f"X-ray {cb['parts']['xray']['match']:.0%} (neutral), clinical {cb['parts']['clinical']['match']:.0%}, final {cb['match']:.0%}")
+
     # blank lab fields are skipped (not required, not treated as normal)
     r = m.score({"wbc": "", "esr": "  ", "stab": None, "alt": "", "glu": "", "fever": True}, None)
     check("blank lab fields are skipped", r["entered"] == ["fever"], str(r["entered"]))

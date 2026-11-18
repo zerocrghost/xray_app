@@ -312,6 +312,7 @@ const Clinical = (() => {
   function changed() {
     updateCount();
     updateButtons();
+    if (typeof Case !== "undefined") Case.touch();      // keep Python's copy of the case current
     if (result) {                                   // keep the result in sync once it exists
       clearTimeout(rerunTimer);
       rerunTimer = setTimeout(() => run(true), 450);
@@ -671,6 +672,14 @@ const Clinical = (() => {
     init, run, clear, importFile, renderLeft, xrayChanged, openWeights, closeWeights, modalOpen,
     hasResult: () => !!result,
     inputs: () => (T ? collect() : {}),
+    // an opened case: fill the form and score it (quietly)
+    restore: async (inputs) => {
+      await clear();
+      if (inputs && Object.keys(inputs).length) {
+        setValues(inputs);
+        if (hasInput()) await run(true);
+      }
+    },
     hasInput: () => !!T && hasInput(),
     ready: () => !!T,
     result: () => result,
