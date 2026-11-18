@@ -1,0 +1,22 @@
+{
+  "_case": "Lung Abscess 07: No lab data",
+  "_expected": "Lung Abscess",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "yes",
+  "dyspnea": "no",
+  "wheezing": "no",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "yes",
+  "duration": "subacute",
+  "auscultation": [
+    "coarse_crackles",
+    "bronchial"
+  ],
+  "BP": "112/70",
+  "pr": 106,
+  "bt": 38.9,
+  "rr": 21,
+  "gcs": 15,
+  "spo2": 95
+}

@@ -208,6 +208,28 @@ def main():
     r = m.score({"wbc": "", "esr": "  ", "stab": None, "alt": "", "glu": "", "fever": True}, None)
     check("blank lab fields are skipped", r["entered"] == ["fever"], str(r["entered"]))
 
+    # Import Lab File name matching: "%FEV1" (percent predicted) must not land in "FEV1" (litres) and vice versa
+    from app import _map_lab_names
+    mapped, unknown = _map_lab_names({"FEV1": "1.2", "%FEV1": "45", "FVC": "2.7", "FEV1/FVC": "44", "SpO2": "91",
+                                      "BP": "120/80", "Pack-years": "30", "Duration": "Years · slowly progressive"}, m)
+    check("import keeps FEV1, %FEV1, FVC and FEV1/FVC apart",
+          mapped.get("fev1") == "1.2" and mapped.get("pfev1") == "45" and mapped.get("fvc") == "2.7"
+          and mapped.get("fev1_fvc") == "44" and mapped.get("duration") == ["years"] and not unknown, str(mapped))
+
+    # the 70 example patients in tests/cases (10 per disease, clinical data only)
+    case_dir = ROOT / "tests" / "cases"
+    files = sorted(case_dir.glob("*.json"))
+    if files:
+        t1 = t3 = 0
+        for fp in files:
+            doc = json.loads(fp.read_text(encoding="utf-8"))
+            inputs, _ = _map_lab_names(doc, m)
+            names = [d["name"] for d in m.score(inputs, None)["diseases"]]
+            t1 += names[0] == doc["_expected"]
+            t3 += doc["_expected"] in names[:3]
+        check(f"{len(files)} example cases: expected disease 1st in ≥ 85 %, top 3 in ≥ 95 %",
+              t1 >= 0.85 * len(files) and t3 >= 0.95 * len(files), f"1st {t1}/{len(files)}, top 3 {t3}/{len(files)}")
+
     # severity: guideline signs graded none / moderate / severe
     sev = m.score(severe, None)
     pn = next(d for d in sev["diseases"] if d["id"] == "pneumonia")["severity"]

@@ -258,6 +258,13 @@ python tests/test_clinical.py   # weight.json + step-2 scoring
 python tests/test_ui.py         # full click-through (window flashes on Windows)
 ```
 
+**Example patients:** `tests/cases/` holds 70 example patients, 10 per disease. They cover typical, mild, severe and atypical presentations, plus cases with no labs, no spirometry or minimal data.
+
+* Load any file on step 2 with **Import Lab File**.
+* `index.csv` lists each case and how it ranks.
+* To regenerate them: `.venv\Scripts\python tools\make_test_cases.py`.
+* The data is fictional and for testing only.
+
 `tests/reference_scores.json` was produced with the original PyTorch model
 (see `~/Documents/xray_onnx`). If someone changes the reader, the
 preprocessing or the model file, `test_engine.py` fails instead of the app

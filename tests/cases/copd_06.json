@@ -1,0 +1,43 @@
+{
+  "_case": "COPD 06: Occupational dust + former smoker",
+  "_expected": "COPD",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "no",
+  "dyspnea": "yes",
+  "wheezing": "yes",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "no",
+  "exposure": [
+    "occupational",
+    "smoking_former"
+  ],
+  "pack_years": 15,
+  "duration": "years",
+  "auscultation": [
+    "diminished",
+    "rhonchi"
+  ],
+  "BP": "138/84",
+  "pr": 94,
+  "bt": 36.6,
+  "rr": 22,
+  "gcs": 15,
+  "spo2": 91,
+  "wbc": 8.4,
+  "esr": 15,
+  "stab": 3,
+  "seg": 66.0,
+  "eos": 2,
+  "bas": 0.5,
+  "lym": 22,
+  "mon": 6.5,
+  "alt": 22,
+  "ast": 24,
+  "tp": 6.9,
+  "ztt": 10,
+  "glu": 108,
+  "fev1": 1.2,
+  "fvc": 2.7,
+  "pfev1": 45
+}

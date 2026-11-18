@@ -1,0 +1,25 @@
+{
+  "_case": "Pleurisy 07: No lab data",
+  "_expected": "Pleurisy",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "yes",
+  "dyspnea": "yes",
+  "wheezing": "no",
+  "cough": "yes",
+  "sputum": "no",
+  "chest_pain": "yes",
+  "duration": "acute",
+  "auscultation": [
+    "friction_rub",
+    "diminished"
+  ],
+  "BP": "122/76",
+  "pr": 98,
+  "bt": 37.9,
+  "rr": 22,
+  "gcs": 15,
+  "spo2": 95,
+  "fev1": 2.4,
+  "fvc": 2.9,
+  "pfev1": 78
+}

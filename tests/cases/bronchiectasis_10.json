@@ -1,0 +1,11 @@
+{
+  "_case": "Bronchiectasis 10: Minimal data",
+  "_expected": "Bronchiectasis",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "cough": "yes",
+  "sputum": "yes",
+  "auscultation": [
+    "coarse_crackles"
+  ],
+  "duration": "years"
+}

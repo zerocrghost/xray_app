@@ -1,0 +1,10 @@
+{
+  "_case": "Pneumonia 10: Minimal data",
+  "_expected": "Pneumonia",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "yes",
+  "cough": "yes",
+  "sputum": "yes",
+  "bt": 38.6,
+  "wbc": 14
+}

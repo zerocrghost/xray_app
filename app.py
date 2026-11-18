@@ -584,7 +584,8 @@ def _read_lab_file(path: Path) -> dict:
 def _map_lab_names(raw: dict, model: ce.ClinicalModel) -> tuple[dict, list[str]]:
     """Map file names (ids, short labels like 'WBC' / 'SpO2', or labels) to the input ids of weight.json."""
     def key(s):
-        return "".join(ch for ch in str(s).lower().replace("₂", "2") if ch.isalnum())
+        # "%" is kept as a token: "%FEV1" (percent predicted) must not collapse into "FEV1" (litres)
+        return "".join(ch for ch in str(s).lower().replace("₂", "2").replace("%", "pct") if ch.isalnum())
     names = {}
     for fid, f in model.features.items():
         if f["input"] == "xray":
@@ -594,11 +595,14 @@ def _map_lab_names(raw: dict, model: ce.ClinicalModel) -> tuple[dict, list[str]]
                 names[key(n)] = fid
     names.update({key("sbp"): "sbp", key("dbp"): "dbp", key("systolic"): "sbp", key("diastolic"): "dbp",
                   key("temperature"): "bt", key("pulse"): "pr", key("hr"): "pr", key("sat"): "spo2",
-                  key("fev1%"): "pfev1", key("fev1/fvc%"): "fev1_fvc"})
+                  key("fev1/fvc%"): "fev1_fvc", key("%pred"): "pfev1"})
+    # "FEV1%" is deliberately not an alias: in Japanese usage it means FEV1/FVC, elsewhere % predicted
     truthy = {"1", "true", "yes", "y", "+", "present", "positive"}
     falsy = {"0", "false", "no", "n", "-", "absent", "negative"}
     inputs, unknown = {}, []
     for name, value in raw.items():
+        if str(name).startswith("_"):                 # metadata such as "_case" / "_note" in example files
+            continue
         fid = names.get(key(name))
         if fid is None:
             unknown.append(str(name))

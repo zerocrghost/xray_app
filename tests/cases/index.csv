@@ -1,0 +1,71 @@
+file,expected,case,fields,rank_of_expected,top_disease,top_match,second,severity_of_top
+asthma_01.json,Asthma,Typical allergic asthma attack,30,1,Asthma,69%,COPD,Moderate
+asthma_02.json,Asthma,Mild intermittent asthma,30,1,Asthma,52%,Chronic Bronchitis,Mild
+asthma_03.json,Asthma,Severe exacerbation,30,1,Asthma,74%,COPD,Severe
+asthma_04.json,Asthma,Cough-variant asthma (no wheeze),30,4,Chronic Bronchitis,38%,Bronchiectasis,Mild
+asthma_05.json,Asthma,Occupational asthma,31,1,Asthma,68%,COPD,Moderate
+asthma_06.json,Asthma,Viral-triggered attack (low fever),30,1,Asthma,62%,Bronchiectasis,Moderate
+asthma_07.json,Asthma,No lab data,17,1,Asthma,70%,COPD,Moderate
+asthma_08.json,Asthma,No spirometry,27,1,Asthma,67%,COPD,Moderate
+asthma_09.json,Asthma,"Young patient, marked eosinophilia",30,1,Asthma,70%,COPD,Moderate
+asthma_10.json,Asthma,Minimal data,4,1,Asthma,77%,COPD,Not assessable
+copd_01.json,COPD,"Typical COPD, current smoker (GOLD 3)",32,1,COPD,77%,Chronic Bronchitis,Moderate
+copd_02.json,COPD,Mild COPD (GOLD 1),32,2,Chronic Bronchitis,67%,COPD,Mild
+copd_03.json,COPD,Severe hypercapnic exacerbation,32,1,COPD,79%,Chronic Bronchitis,Severe
+copd_04.json,COPD,Former smoker,32,1,COPD,76%,Chronic Bronchitis,Moderate
+copd_05.json,COPD,"Never-smoker, biomass smoke",32,1,COPD,72%,Asthma,Moderate
+copd_06.json,COPD,Occupational dust + former smoker,32,1,COPD,75%,Chronic Bronchitis,Moderate
+copd_07.json,COPD,Eosinophilic phenotype,32,1,COPD,77%,Chronic Bronchitis,Moderate
+copd_08.json,COPD,Infective exacerbation,32,1,COPD,74%,Bronchiectasis,Moderate
+copd_09.json,COPD,No spirometry,29,2,Chronic Bronchitis,77%,COPD,Moderate
+copd_10.json,COPD,Minimal data,7,1,COPD,79%,Bronchiectasis,Not assessable
+pneumonia_01.json,Pneumonia,Typical bacterial pneumonia,27,1,Pneumonia,71%,Lung Abscess,Severe
+pneumonia_02.json,Pneumonia,Mild outpatient pneumonia,27,1,Pneumonia,54%,Lung Abscess,Moderate
+pneumonia_03.json,Pneumonia,Severe pneumonia (CURB-65 high),27,1,Pneumonia,76%,Lung Abscess,Severe
+pneumonia_04.json,Pneumonia,"Elderly, afebrile presentation",27,2,Bronchiectasis,59%,Pneumonia,Severe
+pneumonia_05.json,Pneumonia,Atypical (Mycoplasma-like),27,1,Pneumonia,56%,Pleurisy,Moderate
+pneumonia_06.json,Pneumonia,Severe with leukopenia,27,1,Pneumonia,68%,Bronchiectasis,Severe
+pneumonia_07.json,Pneumonia,Pneumonia in a smoker,29,1,Pneumonia,71%,Lung Abscess,Severe
+pneumonia_08.json,Pneumonia,Diabetic (Klebsiella-like),27,1,Pneumonia,71%,Lung Abscess,Severe
+pneumonia_09.json,Pneumonia,No lab data,14,1,Pneumonia,74%,Lung Abscess,Moderate
+pneumonia_10.json,Pneumonia,Minimal data,5,2,Lung Abscess,77%,Pneumonia,Moderate
+pleurisy_01.json,Pleurisy,Typical acute pleurisy with effusion,30,1,Pleurisy,63%,Pneumonia,Moderate
+pleurisy_02.json,Pleurisy,Dry viral pleurisy,30,1,Pleurisy,54%,Pneumonia,Moderate
+pleurisy_03.json,Pleurisy,Tuberculous pleurisy (subacute),30,1,Pleurisy,62%,Pneumonia,Moderate
+pleurisy_04.json,Pleurisy,Large effusion,30,1,Pleurisy,62%,Pneumonia,Moderate
+pleurisy_05.json,Pleurisy,Bacterial pleurisy / empyema,30,1,Pleurisy,66%,Pneumonia,Severe
+pleurisy_06.json,Pleurisy,Asbestos-related effusion,31,1,Pleurisy,55%,COPD,Moderate
+pleurisy_07.json,Pleurisy,No lab data,17,1,Pleurisy,65%,Pneumonia,Moderate
+pleurisy_08.json,Pleurisy,No spirometry,27,1,Pleurisy,64%,Pneumonia,Moderate
+pleurisy_09.json,Pleurisy,Pleurisy with productive cough,30,1,Pleurisy,63%,Pneumonia,Moderate
+pleurisy_10.json,Pleurisy,Minimal data,3,1,Pleurisy,71%,COPD,Not assessable
+chronic_bronchitis_01.json,Chronic Bronchitis,Typical simple chronic bronchitis,32,1,Chronic Bronchitis,77%,Bronchiectasis,Mild
+chronic_bronchitis_02.json,Chronic Bronchitis,No wheeze,32,1,Chronic Bronchitis,74%,Bronchiectasis,Mild
+chronic_bronchitis_03.json,Chronic Bronchitis,"Industrial bronchitis (dust, non-smoker)",32,1,Chronic Bronchitis,71%,Bronchiectasis,Mild
+chronic_bronchitis_04.json,Chronic Bronchitis,Former smoker,32,1,Chronic Bronchitis,75%,Bronchiectasis,Mild
+chronic_bronchitis_05.json,Chronic Bronchitis,Mild infective exacerbation,32,1,Chronic Bronchitis,74%,Bronchiectasis,Mild
+chronic_bronchitis_06.json,Chronic Bronchitis,No spirometry,29,1,Chronic Bronchitis,77%,COPD,Mild
+chronic_bronchitis_07.json,Chronic Bronchitis,Passive smoke + biomass,32,1,Chronic Bronchitis,69%,Bronchiectasis,Mild
+chronic_bronchitis_08.json,Chronic Bronchitis,No lab data,19,1,Chronic Bronchitis,78%,Bronchiectasis,Mild
+chronic_bronchitis_09.json,Chronic Bronchitis,"Heavy smoker, borderline spirometry",32,1,Chronic Bronchitis,75%,Bronchiectasis,Moderate
+chronic_bronchitis_10.json,Chronic Bronchitis,Minimal data,4,1,Chronic Bronchitis,81%,Bronchiectasis,Not assessable
+lung_abscess_01.json,Lung Abscess,Typical lung abscess (aspiration),27,1,Lung Abscess,68%,Pneumonia,Severe
+lung_abscess_02.json,Lung Abscess,Alcohol-related aspiration,27,1,Lung Abscess,68%,Pneumonia,Severe
+lung_abscess_03.json,Lung Abscess,Diabetic patient,27,1,Lung Abscess,68%,Pneumonia,Severe
+lung_abscess_04.json,Lung Abscess,Septic presentation,27,1,Lung Abscess,69%,Pneumonia,Severe
+lung_abscess_05.json,Lung Abscess,Chronic indolent abscess,27,2,Bronchiectasis,65%,Lung Abscess,Moderate
+lung_abscess_06.json,Lung Abscess,Extension to the pleura,27,1,Lung Abscess,68%,Pneumonia,Severe
+lung_abscess_07.json,Lung Abscess,No lab data,14,1,Lung Abscess,70%,Pneumonia,Moderate
+lung_abscess_08.json,Lung Abscess,No relevant exposure recorded,28,1,Lung Abscess,68%,Pneumonia,Severe
+lung_abscess_09.json,Lung Abscess,Milder course,27,1,Lung Abscess,61%,Bronchiectasis,Moderate
+lung_abscess_10.json,Lung Abscess,Minimal data,6,1,Lung Abscess,79%,Pneumonia,Moderate
+bronchiectasis_01.json,Bronchiectasis,Typical stable bronchiectasis,31,1,Bronchiectasis,67%,COPD,Moderate
+bronchiectasis_02.json,Bronchiectasis,Infective exacerbation,31,1,Bronchiectasis,65%,Pneumonia,Moderate
+bronchiectasis_03.json,Bronchiectasis,ABPA-related (eosinophilia),31,1,Bronchiectasis,67%,Asthma,Moderate
+bronchiectasis_04.json,Bronchiectasis,Mild disease,31,2,Chronic Bronchitis,63%,Bronchiectasis,Mild
+bronchiectasis_05.json,Bronchiectasis,Severe disease,31,1,Bronchiectasis,69%,COPD,Severe
+bronchiectasis_06.json,Bronchiectasis,"Post-infectious, no wheeze",31,1,Bronchiectasis,67%,COPD,Moderate
+bronchiectasis_07.json,Bronchiectasis,No spirometry,28,1,Bronchiectasis,68%,Chronic Bronchitis,Mild
+bronchiectasis_08.json,Bronchiectasis,No lab data,18,1,Bronchiectasis,69%,Asthma,Moderate
+bronchiectasis_09.json,Bronchiectasis,Chronic Pseudomonas colonisation,31,1,Bronchiectasis,68%,COPD,Moderate
+bronchiectasis_10.json,Bronchiectasis,Minimal data,4,1,Bronchiectasis,76%,Chronic Bronchitis,Not assessable

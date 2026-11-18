@@ -1,0 +1,10 @@
+{
+  "_case": "Pleurisy 10: Minimal data",
+  "_expected": "Pleurisy",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "chest_pain": "yes",
+  "auscultation": [
+    "friction_rub"
+  ],
+  "dyspnea": "yes"
+}

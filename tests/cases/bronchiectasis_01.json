@@ -1,0 +1,41 @@
+{
+  "_case": "Bronchiectasis 01: Typical stable bronchiectasis",
+  "_expected": "Bronchiectasis",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "no",
+  "dyspnea": "yes",
+  "wheezing": "yes",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "no",
+  "exposure": [
+    "none"
+  ],
+  "duration": "years",
+  "auscultation": [
+    "coarse_crackles",
+    "rhonchi"
+  ],
+  "BP": "122/74",
+  "pr": 88,
+  "bt": 37.0,
+  "rr": 19,
+  "gcs": 15,
+  "spo2": 94,
+  "wbc": 9.6,
+  "esr": 44,
+  "stab": 4,
+  "seg": 70.0,
+  "eos": 2,
+  "bas": 0.4,
+  "lym": 18,
+  "mon": 5.6,
+  "alt": 19,
+  "ast": 22,
+  "tp": 7.7,
+  "ztt": 19,
+  "glu": 99,
+  "fev1": 1.9,
+  "fvc": 2.9,
+  "pfev1": 66
+}

@@ -1,6 +1,6 @@
 {
   "name": "PneumoLens AI clinical weighting table",
-  "version": "1.4",
+  "version": "1.5",
   "updated": "2026-11-17",
   "disclaimer": "Decision support for research use only. Weights are expert-style assumptions derived from the cited guidelines and textbook descriptions, not fitted to patient data. They must be validated before clinical use.",
   "method": {
@@ -3081,10 +3081,10 @@
           "why": "%FEV1 stays near normal in simple chronic bronchitis; a low value points to COPD."
         },
         "fev1_fvc": {
-          "group": "C",
-          "weight": 1.2,
+          "group": "A",
+          "weight": 3.0,
           "expect": "normal",
-          "why": "Simple chronic bronchitis keeps a normal FEV1/FVC (Fletcher & Peto 1977); with persistent obstruction (< 0.70) the patient is classified as COPD (GOLD), so a normal ratio supports this diagnosis."
+          "why": "Part of the definition (other causes excluded): simple chronic bronchitis keeps a normal FEV1/FVC (Fletcher & Peto 1977); measured persistent obstruction (< 0.70) reclassifies the patient as COPD (GOLD). Exclusion: a normal ratio adds nothing, obstruction counts fully against."
         },
         "xr_pneumonia": {
           "group": "D",

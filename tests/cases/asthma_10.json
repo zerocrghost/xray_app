@@ -1,0 +1,11 @@
+{
+  "_case": "Asthma 10: Minimal data",
+  "_expected": "Asthma",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "wheezing": "yes",
+  "dyspnea": "yes",
+  "auscultation": [
+    "wheeze"
+  ],
+  "duration": "episodic"
+}

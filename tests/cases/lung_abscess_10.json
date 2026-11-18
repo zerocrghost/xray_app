@@ -1,0 +1,11 @@
+{
+  "_case": "Lung Abscess 10: Minimal data",
+  "_expected": "Lung Abscess",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "yes",
+  "sputum": "yes",
+  "cough": "yes",
+  "bt": 39.0,
+  "wbc": 17,
+  "duration": "subacute"
+}

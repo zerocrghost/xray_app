@@ -1,0 +1,28 @@
+{
+  "_case": "Chronic Bronchitis 08: No lab data",
+  "_expected": "Chronic Bronchitis",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "no",
+  "dyspnea": "no",
+  "wheezing": "yes",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "no",
+  "exposure": [
+    "smoking_current"
+  ],
+  "pack_years": 25,
+  "duration": "years",
+  "auscultation": [
+    "rhonchi"
+  ],
+  "BP": "132/84",
+  "pr": 82,
+  "bt": 36.5,
+  "rr": 17,
+  "gcs": 15,
+  "spo2": 96,
+  "fev1": 2.8,
+  "fvc": 3.7,
+  "pfev1": 84
+}

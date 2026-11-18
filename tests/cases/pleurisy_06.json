@@ -1,0 +1,41 @@
+{
+  "_case": "Pleurisy 06: Asbestos-related effusion",
+  "_expected": "Pleurisy",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "no",
+  "dyspnea": "yes",
+  "wheezing": "no",
+  "cough": "yes",
+  "sputum": "no",
+  "chest_pain": "yes",
+  "exposure": [
+    "occupational"
+  ],
+  "duration": "subacute",
+  "auscultation": [
+    "friction_rub",
+    "diminished"
+  ],
+  "BP": "122/76",
+  "pr": 98,
+  "bt": 36.8,
+  "rr": 22,
+  "gcs": 15,
+  "spo2": 95,
+  "wbc": 10.4,
+  "esr": 52,
+  "stab": 5,
+  "seg": 70.0,
+  "eos": 1,
+  "bas": 0.5,
+  "lym": 19,
+  "mon": 4.5,
+  "alt": 24,
+  "ast": 26,
+  "tp": 7.1,
+  "ztt": 11,
+  "glu": 98,
+  "fev1": 2.4,
+  "fvc": 2.9,
+  "pfev1": 78
+}

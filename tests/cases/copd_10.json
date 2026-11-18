@@ -1,0 +1,14 @@
+{
+  "_case": "COPD 10: Minimal data",
+  "_expected": "COPD",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "dyspnea": "yes",
+  "cough": "yes",
+  "exposure": [
+    "smoking_current"
+  ],
+  "pack_years": 45,
+  "duration": "years",
+  "fev1": 1.4,
+  "fvc": 2.6
+}

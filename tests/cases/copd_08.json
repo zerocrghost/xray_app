@@ -1,0 +1,42 @@
+{
+  "_case": "COPD 08: Infective exacerbation",
+  "_expected": "COPD",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "yes",
+  "dyspnea": "yes",
+  "wheezing": "yes",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "no",
+  "exposure": [
+    "smoking_current"
+  ],
+  "pack_years": 45,
+  "duration": "years",
+  "auscultation": [
+    "diminished",
+    "rhonchi"
+  ],
+  "BP": "138/84",
+  "pr": 94,
+  "bt": 38.2,
+  "rr": 22,
+  "gcs": 15,
+  "spo2": 91,
+  "wbc": 12.8,
+  "esr": 32,
+  "stab": 6,
+  "seg": 72.0,
+  "eos": 2,
+  "bas": 0.5,
+  "lym": 13,
+  "mon": 6.5,
+  "alt": 22,
+  "ast": 24,
+  "tp": 6.9,
+  "ztt": 10,
+  "glu": 108,
+  "fev1": 1.2,
+  "fvc": 2.7,
+  "pfev1": 45
+}

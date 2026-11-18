@@ -1,0 +1,39 @@
+{
+  "_case": "Pneumonia 07: Pneumonia in a smoker",
+  "_expected": "Pneumonia",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "yes",
+  "dyspnea": "yes",
+  "wheezing": "no",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "yes",
+  "exposure": [
+    "smoking_current"
+  ],
+  "duration": "acute",
+  "auscultation": [
+    "coarse_crackles",
+    "bronchial"
+  ],
+  "BP": "118/72",
+  "pr": 108,
+  "bt": 38.8,
+  "rr": 24,
+  "gcs": 15,
+  "spo2": 93,
+  "wbc": 15.2,
+  "esr": 45,
+  "stab": 12,
+  "seg": 74.0,
+  "eos": 0.5,
+  "bas": 0.3,
+  "lym": 9,
+  "mon": 4.2,
+  "alt": 38,
+  "ast": 41,
+  "tp": 6.6,
+  "ztt": 9,
+  "glu": 128,
+  "pack_years": 25
+}

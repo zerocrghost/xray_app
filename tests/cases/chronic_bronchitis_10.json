@@ -1,0 +1,11 @@
+{
+  "_case": "Chronic Bronchitis 10: Minimal data",
+  "_expected": "Chronic Bronchitis",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "cough": "yes",
+  "sputum": "yes",
+  "duration": "years",
+  "exposure": [
+    "smoking_current"
+  ]
+}

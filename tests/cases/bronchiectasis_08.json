@@ -1,0 +1,28 @@
+{
+  "_case": "Bronchiectasis 08: No lab data",
+  "_expected": "Bronchiectasis",
+  "_note": "Example data for testing only (fictional patient). Load it on step 2 with Import Lab File.",
+  "fever": "no",
+  "dyspnea": "yes",
+  "wheezing": "yes",
+  "cough": "yes",
+  "sputum": "yes",
+  "chest_pain": "no",
+  "exposure": [
+    "none"
+  ],
+  "duration": "years",
+  "auscultation": [
+    "coarse_crackles",
+    "rhonchi"
+  ],
+  "BP": "122/74",
+  "pr": 88,
+  "bt": 37.0,
+  "rr": 19,
+  "gcs": 15,
+  "spo2": 94,
+  "fev1": 1.9,
+  "fvc": 2.9,
+  "pfev1": 66
+}
