@@ -182,6 +182,31 @@ def main():
     app.save_settings(dataset_dir="./dataset")
     check("default dataset folder is ./dataset next to the app", app.dataset_dir() == (app.APP_DIR / "dataset").resolve())
 
+    # weight edits from the app settings: saved, used for scoring, recorded in the case, survive a restart
+    edit = {"pneumonia": {"fever": {"group": "D", "weight": 0}}}
+    r = api.set_weights(edit)
+    check("set_weights saves the edits to settings.json",
+          r["ok"] and app.load_settings()["weight_overrides"] == {"pneumonia": {"fever": {"group": "D", "weight": 0.0}}}
+          and r["weights"]["edits"] == 1 and "1 local edit" in r["clinical"]["label"])
+    check("Settings report the weights in use", api.get_settings()["weights"]["label"] == api._clinical_model.label())
+    api.update_case({"patient": {"patient_id": "P-W", "name": "Weights Case"}})
+    api.analyze_clinical({"fever": True, "cough": True})
+    rec = api._build_record()
+    check("a saved case records the weights label and the exact edits",
+          "1 local edit" in rec["analysis"]["weights"] and rec["analysis"]["weight_overrides"] == api._clinical_model.overrides)
+    r = api.set_weights({"pneumonia": {"fever": {"weight": 99}}})
+    check("an invalid edit is refused and changes nothing", not r["ok"] and api._clinical_model.edit_count == 1
+          and app.load_settings()["weight_overrides"]["pneumonia"]["fever"]["group"] == "D", r.get("error", "").splitlines()[-1])
+    model, warn = app.load_clinical_model()
+    check("after a restart the saved edits are used", warn is None and model.overrides == api._clinical_model.overrides)
+    app.save_settings(weight_overrides={"asthma": {"wheezing": {"weight": 99}}})     # e.g. weight.json changed under it
+    model, warn = app.load_clinical_model()
+    check("edits that no longer fit weight.json: the app still starts with weight.json and warns",
+          model.overrides == {} and warn and "not applied" in warn)
+    r = api.reset_weights()
+    check("Reset goes back to weight.json", r["ok"] and app.load_settings()["weight_overrides"] == {}
+          and api._clinical_model.label() == f"weight.json v{api._clinical_model.table['version']}")
+
     ok = all(results)
     print(f"\n{sum(results)}/{len(results)} checks passed")
     print("RESULT:", "PASS" if ok else "FAIL")

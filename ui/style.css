@@ -436,6 +436,28 @@ table.wt{width:100%;border-collapse:collapse;font-size:12.5px}
 .w-doc h4:first-child{margin-top:0}
 .w-doc code{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
 .w-doc li{margin-left:18px}
+/* weight editor (edit mode of the weighting table) */
+.w-head .btn.sm{margin-top:2px}
+.w-tabs button.mod::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent2);margin-left:6px;vertical-align:2px}
+.wt .w small{display:block;color:var(--dim);font-size:10.5px;font-family:inherit;margin-top:2px}
+.wt tr.mod td{background:rgba(59,123,255,.07)}
+.wt tr.mod .w{color:var(--accent2);font-weight:600}
+.wt .w-edit{display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.wt .w-edit select,.wt .w-edit input{background:var(--input-bg);border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font:inherit;font-size:12px;color:var(--text);outline:none}
+.wt .w-edit select{width:44px}
+.wt .w-edit input{width:62px;text-align:right}
+.wt .w-edit input:disabled{opacity:.5}
+.wt .w-edit select:focus,.wt .w-edit input:focus{border-color:var(--accent)}
+.wt .w-edit input.bad{border-color:var(--red-t);color:var(--red-t)}
+.wt .w-undo{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+.wt .w-undo:hover{color:var(--text)}
+.w-foot{display:flex;align-items:center;gap:10px;margin-top:12px}
+.w-foot .btn{height:36px}
+.w-foot .btn.primary{padding:0 18px}
+.w-state{font-size:12px;color:var(--muted)}
+.w-state.err{color:var(--red-t)}
+.s-weights{flex:1;min-width:0;font-size:12.5px;color:var(--sum-text) !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-weights.err{color:var(--red-t) !important;white-space:normal}
 body.landing-on .workspace,body:not(.landing-on) .landing{display:none}
 
 /* landing page */

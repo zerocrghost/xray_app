@@ -339,6 +339,41 @@ def step2(window, api, js, wait_for, tmp, answers):
     js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
     check(js("document.querySelector('#wModal').hidden") is True, "Esc closes the weighting table")
 
+    # weight editor: change one weight, save (settings.json), the step-2 result is re-scored with it, then reset
+    js("document.querySelector('#btnWeights').click(); document.querySelector('#wEdit').click()")
+    check(js("!document.querySelector('#wFoot').hidden && document.querySelectorAll('#wBody input.w-n').length") == n_feat,
+          "Edit weights shows a group + weight field for every item")
+    check(js("document.querySelector('#wSave').disabled") is True, "nothing to save before an edit")
+    set_w = ("(v) => { const i = document.querySelector('#wBody input.w-n:not(:disabled)'); i.value = String(v); "
+             "i.dispatchEvent(new Event('input')); i.dispatchEvent(new Event('change')); return i; }")
+    lo, hi, cur = js("(() => { const i = document.querySelector('#wBody input.w-n:not(:disabled)'); return [+i.min, +i.max, +i.value]; })()")
+    js(f"({set_w})({hi + 1})")
+    check(js("document.querySelector('#wBody input.w-n.bad') !== null && document.querySelector('#wSave').disabled") is True,
+          "a weight outside the group's range is marked and cannot be saved")
+    new = lo if cur != lo else hi
+    js(f"({set_w})({new})")
+    check("1 item in 1 disease" in js("document.querySelector('#wState').textContent") and
+          js("document.querySelector('#wSave').disabled") is False, "a valid edit is counted and can be saved",
+          js("document.querySelector('#wState').textContent"))
+    js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
+    check(js("!document.querySelector('#wModal').hidden") is True, "Esc does not throw away unsaved weight edits")
+    before = js("document.querySelector('#cOut .hero') ? document.querySelector('#cOut .hero').textContent : ''")
+    js("document.querySelector('#wSave').click()")
+    check(_wait_file(lambda: sum(len(v) for v in (app.load_settings().get("weight_overrides") or {}).values()) == 1),
+          "Save weights stores the edit in settings.json")
+    check(wait_for("document.querySelector('#wFoot').hidden && document.querySelector('#wSub').textContent.includes('1 local edit')", 5) and
+          api._clinical_model.edit_count == 1 and js("document.querySelectorAll('#wTabs button.mod').length") == 1,
+          "after saving, the table shows the edit and the new label", js("document.querySelector('#wSub').textContent"))
+    check(wait_for("!!document.querySelector('#cOut .hero')", 5), "the step-2 result is re-scored with the new weights", before)
+    js("document.querySelector('#wEdit').click(); document.querySelector('#wResetAll').click(); document.querySelector('#wSave').click()")
+    check(_wait_file(lambda: app.load_settings().get("weight_overrides") == {}) and api._clinical_model.edit_count == 0,
+          "Reset all + Save goes back to weight.json")
+    js("Clinical.closeWeights()")
+    js("document.querySelector('#btnSettings').click()")
+    check(wait_for("document.querySelector('#setWeights').textContent.includes('as shipped')", 5),
+          "Settings shows which weights are in use", js("document.querySelector('#setWeights').textContent"))
+    js("document.querySelector('#setCancel').click()")
+
     # import a lab file (CSV name,value)
     lab = tmp / "labs.csv"
     lab.write_text("WBC,5.1\nfever,no\nBP,120/80\nFoo,1\n", encoding="utf-8")

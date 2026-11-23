@@ -457,12 +457,24 @@ function showDatasetPath(r) {
   el2.textContent = r && r.dataset_path ? "→ " + r.dataset_path : "";
 }
 
+function showWeightsInfo(w) {
+  const box = $("setWeights");
+  box.className = "s-weights" + (w && w.warning ? " err" : "");
+  if (!w) { box.textContent = "not loaded"; $("setEditWeights").disabled = true; return; }
+  $("setEditWeights").disabled = !Clinical.ready();
+  box.textContent = w.warning ? w.warning
+    : w.edits ? `${w.label} · ${w.edits} item${w.edits === 1 ? "" : "s"} in ${w.diseases} disease${w.diseases === 1 ? "" : "s"} changed`
+    : `${w.label} as shipped (no edits)`;
+  box.title = box.textContent;
+}
+
 async function openSettings() {
   const r = await api().get_settings();
   $("setRatio").value = Math.round((r.candidate_ratio ?? 0.5) * 100);
   $("setMax").value = r.max_candidates ?? 3;
   $("setDataset").value = r.dataset_dir || r.dataset_default || "./dataset";
   $("setHospital").value = r.hospital || "";
+  showWeightsInfo(r.weights);
   showDatasetPath(r);
   settingsExample();
   $("setModal").hidden = false;
@@ -504,6 +516,11 @@ $("setBrowse").onclick = async () => {
 $("setOpenDs").onclick = async () => {
   const r = await api().open_dataset_folder();
   if (r && !r.ok) toast(r.error, true);
+};
+$("setEditWeights").onclick = () => {
+  // the other settings in this dialog are not saved by this button: Save them first if they were changed
+  closeSettings();
+  Clinical.openWeights(null, true);
 };
 $("setRatio").addEventListener("input", settingsExample);
 $("setMax").addEventListener("input", settingsExample);
@@ -623,8 +640,10 @@ document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey && "rsop".includes(k)) || e.key === "F5") e.preventDefault();
     return;
   }
-  if (Clinical.modalOpen()) {   // weighting table: Esc closes it, nothing else reaches the page
+  if (Clinical.modalOpen()) {   // weighting table: Esc closes it (not with unsaved edits), Ctrl+S saves edits
     if (e.key === "Escape") Clinical.closeWeights();
+    else if (e.ctrlKey && k === "s" && Clinical.editingWeights()) Clinical.saveWeights();
+    else if (e.key === "Enter" && e.target.matches && e.target.matches("input.w-n")) e.target.blur();
     if ((e.ctrlKey && "rso".includes(k)) || e.key === "F5") e.preventDefault();
     return;
   }
@@ -680,6 +699,7 @@ async function start() {
   }
   state.ready = true;
   Clinical.init(r.clinical);
+  if (r.weights_warning) toast(r.weights_warning, true);    // stored weight edits no longer fit weight.json
   try { Patient.init(await api().get_settings()); } catch (e) { Patient.init({}); }
   state.labels = r.shown_labels;
   state.bands = r.bands;

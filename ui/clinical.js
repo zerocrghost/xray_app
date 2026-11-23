@@ -567,23 +567,178 @@ const Clinical = (() => {
     return [txt, sub];
   }
 
-  function openWeights(id) {
-    wTab = id || selected || Object.keys(T.diseases)[0];
+  // ---- weight editor: edits are kept in `draft` until Save, then checked and stored by app.py (settings.json)
+  let draft = null;          // edit mode: {disease: {input: {group, weight}}} for every item; null = view only
+  const editing = () => !!draft;
+  const changedIn = (dk, src) => Object.entries(src[dk] || {}).some(([fid, v]) => !sameAsFile(dk, fid, v));
+  const sameAsFile = (dk, fid, v) => {
+    const b = T.defaults[dk][fid];
+    return v.group === b.group && +v.weight === +b.weight;
+  };
+  const effective = () => Object.fromEntries(Object.entries(T.diseases).map(([dk, d]) =>
+    [dk, Object.fromEntries(Object.entries(d.items).map(([fid, it]) => [fid, { group: it.group, weight: it.weight }]))]));
+
+  function badWeight(v) {
+    if (v.group === "D") return false;
+    const [lo, hi] = T.groups[v.group].range;
+    return !Number.isFinite(v.weight) || v.weight < lo || v.weight > hi;
+  }
+
+  function draftChanges() {  // only the items that differ from weight.json (what set_weights expects)
+    const out = {};
+    for (const [dk, items] of Object.entries(draft)) {
+      for (const [fid, v] of Object.entries(items)) {
+        if (!sameAsFile(dk, fid, v)) (out[dk] ||= {})[fid] = { group: v.group, weight: v.group === "D" ? 0 : +v.weight };
+      }
+    }
+    return out;
+  }
+
+  const canon = (o) => JSON.stringify(Object.keys(o).sort().map((dk) =>
+    [dk, Object.keys(o[dk]).sort().map((fid) => [fid, o[dk][fid].group, +o[dk][fid].weight])]));
+  const dirty = () => editing() && canon(draftChanges()) !== canon(T.overrides || {});
+  const invalid = () => editing() && Object.values(draft).some((items) => Object.values(items).some(badWeight));
+
+  function refreshEditState() {
+    for (const b of $("wTabs").children) {
+      const k = b.dataset.k;
+      b.classList.toggle("mod", k !== "method" && changedIn(k, editing() ? draft : effective()));
+    }
+    if (!editing()) return;
+    const ch = draftChanges();
+    const n = Object.values(ch).reduce((s, x) => s + Object.keys(x).length, 0);
+    const bad = invalid();
+    $("wState").className = "w-state" + (bad ? " err" : "");
+    $("wState").textContent = bad ? "A weight is outside its group's range"
+      : (n ? `${n} item${n === 1 ? "" : "s"} in ${Object.keys(ch).length} disease${Object.keys(ch).length === 1 ? "" : "s"} differ from weight.json`
+           : "Same as weight.json") + (dirty() ? " · not saved" : "");
+    $("wSave").disabled = bad || !dirty();
+    $("wResetDisease").disabled = wTab === "method" || !changedIn(wTab, draft);
+    $("wResetAll").disabled = n === 0;
+  }
+
+  function openWeights(id, edit = false) {
+    if (edit && !draft) draft = effective();
+    // a tab click / redraw keeps its tab; opening the dialog starts at the disease shown in step 2
+    wTab = id || (modalOpen() ? wTab : null) || selected || Object.keys(T.diseases)[0];
     const tabs = $("wTabs");
     tabs.replaceChildren();
     for (const [k, d] of [...Object.entries(T.diseases), ["method", { name: "Method" }]]) {
       const b = el("button", k === wTab ? "on" : "", d.name);
+      b.dataset.k = k;
       b.onclick = () => openWeights(k);
       tabs.append(b);
     }
-    $("wTitle").textContent = "Weighting table";
-    $("wSub").textContent = `models/weight.json · v${T.version} · ${Object.keys(T.features).length} inputs × ${Object.keys(T.diseases).length} diseases`;
+    $("wTitle").textContent = editing() ? "Edit weighting table" : "Weighting table";
+    const n = Object.values(T.overrides || {}).reduce((s, x) => s + Object.keys(x).length, 0);
+    $("wSub").textContent = `${T.label || "weight.json v" + T.version} · ${Object.keys(T.features).length} inputs × ` +
+      `${Object.keys(T.diseases).length} diseases` + (editing() ? " · edits are saved in settings.json, weight.json is not changed"
+                                                              : n ? " · edited items are marked" : "");
+    $("wEdit").hidden = editing();
+    $("wFoot").hidden = !editing();
     const body = $("wBody");
     body.replaceChildren();
     body.scrollTop = 0;
     if (wTab === "method") body.append(methodDoc());
     else body.append(...diseaseTable(wTab));
     $("wModal").hidden = false;
+    refreshEditState();
+  }
+
+  // the weight cell: view = the number (+ weight.json's value if edited); edit = group select + weight input
+  function weightCell(dk, fid, tr) {
+    const td = el("td", "w");
+    const b = T.defaults[dk][fid];
+    const fileNote = () => `weight.json: ${b.group} ${(+b.weight).toFixed(1)}`;
+    if (!editing()) {
+      const it = T.diseases[dk].items[fid];
+      td.append(it.weight ? (+it.weight).toFixed(1) : "0");
+      if (!sameAsFile(dk, fid, it)) { tr.classList.add("mod"); td.append(el("small", null, fileNote())); }
+      return td;
+    }
+    const v = draft[dk][fid];
+    const sel = el("select", "w-g");
+    for (const g of Object.keys(T.groups)) {
+      const o = el("option", null, g);
+      o.value = g;
+      sel.append(o);
+    }
+    const inp = el("input", "w-n");
+    Object.assign(inp, { type: "number", step: "0.1", inputMode: "decimal" });
+    inp.setAttribute("aria-label", `Weight of ${T.features[fid].label} for ${T.diseases[dk].name}`);
+    const undo = el("button", "w-undo", "↺");
+    undo.title = "Back to " + fileNote();
+    const note = el("small");
+    const sync = () => {
+      const [lo, hi] = T.groups[v.group].range;
+      sel.value = v.group;
+      inp.min = lo; inp.max = hi;
+      inp.disabled = v.group === "D";
+      if (document.activeElement !== inp) inp.value = v.group === "D" ? "0" : String(v.weight);
+      inp.title = v.group === "D" ? "Group D is not used: weight 0" : `Group ${v.group}: ${lo}–${hi}`;
+      inp.classList.toggle("bad", badWeight(v));
+      const mod = !sameAsFile(dk, fid, v);
+      tr.classList.toggle("mod", mod);
+      undo.style.visibility = mod ? "visible" : "hidden";
+      note.textContent = mod ? fileNote() : "";
+      refreshEditState();
+    };
+    sel.onchange = () => {
+      v.group = sel.value;
+      const [lo, hi] = T.groups[v.group].range;
+      // keep the weight if it fits the new group; else weight.json's own weight (back in its group), the nearest
+      // end of the range (A -> C gives C's top, C -> A gives A's bottom) or, coming from D (0), the range's middle
+      if (v.group === "D") v.weight = 0;
+      else if (!(v.weight >= lo && v.weight <= hi)) {
+        if (v.group === b.group) v.weight = +b.weight;
+        else if (v.weight > hi) v.weight = hi;
+        else if (v.weight > 0) v.weight = lo;
+        else v.weight = +((lo + hi) / 2).toFixed(1);
+      }
+      sync();
+    };
+    inp.oninput = () => { v.weight = inp.value === "" ? NaN : +inp.value; sync(); };
+    inp.onchange = () => { if (Number.isFinite(v.weight)) v.weight = +v.weight.toFixed(2); sync(); };
+    undo.onclick = () => { v.group = b.group; v.weight = +b.weight; inp.blur(); sync(); };
+    const row = el("div", "w-edit");
+    row.append(sel, inp, undo);
+    td.append(row, note);
+    sync();
+    return td;
+  }
+
+  function resetDraft(dks) {
+    for (const dk of dks) {
+      for (const fid of Object.keys(draft[dk])) draft[dk][fid] = { ...T.defaults[dk][fid], weight: +T.defaults[dk][fid].weight };
+    }
+    const top = $("wBody").scrollTop;
+    openWeights(wTab);
+    $("wBody").scrollTop = top;
+  }
+
+  async function saveWeights() {
+    if (!editing() || !dirty()) return;
+    if (invalid()) { toast("A weight is outside its group's range. Correct the red fields first.", true); return; }
+    const r = await api().set_weights(draftChanges());
+    if (!r || !r.ok) { toast((r && r.error) || "The weights could not be saved.", true); return; }
+    draft = null;
+    await tableChanged(r.clinical);
+    openWeights(wTab);
+    toast(r.weights.edits ? `Weights saved · ${r.weights.label}` : "Weights reset · weight.json is used as shipped");
+  }
+
+  // a new weight table from app.py: keep the form as it is, score the entered data again with the new weights
+  async function tableChanged(table) {
+    T = table;
+    if (result) await run(true);
+    renderLeft();
+    renderOut();
+    if (typeof step !== "undefined" && step === 3 && typeof Report !== "undefined") Report.open();
+  }
+
+  function cancelEdit() {
+    draft = null;
+    openWeights(wTab);
   }
 
   function diseaseTable(id) {
@@ -596,8 +751,11 @@ const Clinical = (() => {
     const t = el("table", "wt");
     t.innerHTML = "<thead><tr><th>Item</th><th style='text-align:right'>Weight</th><th>Expected finding</th><th>Theory / assumption</th></tr></thead>";
     const tb = el("tbody");
+    // rows are grouped by the group when the tab was opened, so a row does not jump away while it is edited
+    const cur = editing() ? draft[id] : d.items;
     for (const g of ["A", "B", "C", "D"]) {
-      const items = Object.entries(d.items).filter(([, it]) => it.group === g).sort((a, b) => b[1].weight - a[1].weight);
+      const items = Object.entries(d.items).filter(([fid]) => cur[fid].group === g)
+        .sort((a, b) => cur[b[0]].weight - cur[a[0]].weight);
       const gh = el("tr", "gh");
       const td = el("td");
       td.colSpan = 4;
@@ -608,14 +766,14 @@ const Clinical = (() => {
       tb.append(gh);
       for (const [fid, it] of items) {
         const f = T.features[fid];
-        const tr = el("tr", g === "D" ? "d" : "");
+        const tr = el("tr", g === "D" && !editing() ? "d" : "");
         const c1 = el("td", "it");
         c1.append(f.short && f.input !== "xray" ? f.short : f.label.replace("X-ray: ", ""), el("span", "g" + g, g),
           el("small", null, (T.categories[f.category] || f.category) + (f.short && f.input !== "xray" && f.short !== f.label ? " · " + f.label : "")));
         const [ex, sub] = expected(fid, it);
         const c3 = el("td", "ex", ex);
         if (sub) c3.append(el("small", null, sub));
-        tr.append(c1, el("td", "w", it.weight ? it.weight.toFixed(1) : "0"), c3, el("td", "why", it.why));
+        tr.append(c1, weightCell(id, fid, tr), c3, el("td", "why", it.why));
         tb.append(tr);
       }
     }
@@ -649,7 +807,13 @@ const Clinical = (() => {
     return doc;
   }
 
-  function closeWeights() { $("wModal").hidden = true; }
+  // closing with unsaved edits is refused (Save or Cancel first), so edits are never lost by a stray Esc / click
+  function closeWeights() {
+    if (dirty()) { toast("The weight edits are not saved. Click Save weights or Cancel.", true); return false; }
+    draft = null;
+    $("wModal").hidden = true;
+    return true;
+  }
 
   // ---------------------------------------------------------------- wiring
   function init(table) {
@@ -667,9 +831,16 @@ const Clinical = (() => {
   $("btnWeights").onclick = () => T && openWeights();
   $("wClose").onclick = closeWeights;
   $("wModal").addEventListener("mousedown", (e) => { if (e.target === e.currentTarget) closeWeights(); });
+  $("wEdit").onclick = () => openWeights(wTab, true);
+  $("wCancel").onclick = cancelEdit;
+  $("wSave").onclick = saveWeights;
+  $("wResetDisease").onclick = () => wTab !== "method" && resetDraft([wTab]);
+  $("wResetAll").onclick = () => resetDraft(Object.keys(draft));
 
   return {
     init, run, clear, importFile, renderLeft, xrayChanged, openWeights, closeWeights, modalOpen,
+    editingWeights: editing, saveWeights,
+    weightsLabel: () => (T ? T.label : ""),
     hasResult: () => !!result,
     inputs: () => (T ? collect() : {}),
     // an opened case: fill the form and score it (quietly)

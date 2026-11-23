@@ -106,6 +106,19 @@ def report_settings() -> dict:
     return out
 
 
+def load_clinical_model() -> tuple[ce.ClinicalModel, str | None]:
+    """weight.json plus the user's weight edits from settings.json ("weight_overrides").
+    If the edits no longer fit weight.json (e.g. after an update of the table), the app still starts with the
+    plain table and returns a warning; the stored edits are kept until the user saves or resets them."""
+    overrides = load_settings().get("weight_overrides") or {}
+    try:
+        return ce.ClinicalModel(WEIGHTS_PATH, overrides), None
+    except ValueError as e:
+        if not overrides:
+            raise                                   # weight.json itself is broken: refuse to start
+        return ce.ClinicalModel(WEIGHTS_PATH), f"Your weight edits were not applied, weight.json is used as is. {e}"
+
+
 def saved_theme() -> str:
     """'light' / 'dark' from the settings, else the Windows app theme (default: dark)."""
     t = load_settings().get("theme")
@@ -141,6 +154,7 @@ class Api:
         self._image: xe.XRayImage | None = None
         self._result: dict | None = None
         self._clinical_model: ce.ClinicalModel | None = None
+        self._weights_warning: str | None = None    # stored weight edits that could not be applied
         self._clinical: dict | None = None          # last step-2 result (+ the inputs it used)
         self._report: dict | None = None            # last step-3 report
         self._report_id: str | None = None          # = case id; stays the same for one patient
@@ -165,10 +179,11 @@ class Api:
                 if self._model is None:
                     self._model = xe.XRayModel(MODEL_PATH)
                 if self._clinical_model is None:
-                    self._clinical_model = ce.ClinicalModel(WEIGHTS_PATH)
+                    self._clinical_model, self._weights_warning = load_clinical_model()
             m = self._model
             return _ok(
                 clinical=self._clinical_model.for_ui(),
+                weights_warning=self._weights_warning,
                 model=m.name,
                 device=m.provider,
                 devices=[{"id": p, "name": xe.PROVIDER_NAMES[p]} for p in m.available_providers()],
@@ -192,7 +207,31 @@ class Api:
     def get_settings(self):
         s = load_settings()
         return _ok(**report_settings(), dataset_dir=s.get("dataset_dir") or DATASET_DEFAULT,
-                   dataset_path=str(dataset_dir()), dataset_default=DATASET_DEFAULT, hospital=s.get("hospital", ""))
+                   dataset_path=str(dataset_dir()), dataset_default=DATASET_DEFAULT, hospital=s.get("hospital", ""),
+                   weights=self._weights_info())
+
+    def _weights_info(self) -> dict | None:
+        cm = self._clinical_model
+        if cm is None:
+            return None
+        return {"label": cm.label(), "edits": cm.edit_count, "diseases": len(cm.overrides),
+                "warning": self._weights_warning, "ignored": cm.ignored_overrides}
+
+    def set_weights(self, overrides: dict):
+        """Weight edits from the weighting-table editor: {disease: {input: {group, weight}}} (only the changed
+        items; an empty object = back to weight.json). Checked like weight.json, then saved to settings.json and
+        used for every analysis from now on. A rejected edit changes nothing."""
+        try:
+            model = ce.ClinicalModel(WEIGHTS_PATH, overrides or {})     # raises ValueError with every problem
+            save_settings(weight_overrides=model.overrides)
+            with self._lock:
+                self._clinical_model, self._weights_warning = model, None
+            return _ok(clinical=model.for_ui(), weights=self._weights_info())
+        except Exception as e:
+            return _error(e)
+
+    def reset_weights(self):
+        return self.set_weights({})
 
     def set_settings(self, changes: dict):
         """Application settings from the Settings dialog (only known keys are accepted)."""
@@ -354,7 +393,8 @@ class Api:
             "diseases": diseases,
             "candidates": candidates,
             "alerts": score["alerts"],
-            "weights": f"{WEIGHTS_PATH.name} v{score['table_version']}",
+            "weights": score["weights_label"],
+            "weight_overrides": cm.overrides,
             "review": review or {},
             "disclaimer": DISCLAIMER,
         }
@@ -469,7 +509,8 @@ class Api:
         if r or any(not k.startswith("_") for k in values):
             rep = self._compute_report(self._clinical_inputs, self._review)
             analysis = {
-                "weights": rep["weights"], "alerts": rep["alerts"], "candidates": rep["candidates"],
+                "weights": rep["weights"], "weight_overrides": rep["weight_overrides"],
+                "alerts": rep["alerts"], "candidates": rep["candidates"],
                 "diseases": [{"id": d["id"], "name": d["name"], "match": d["match"], "coverage": d["coverage"],
                               "level": d["level"], "parts": {k: {x: d["parts"][k][x] for x in ("match", "used", "neutral")}
                                                              for k in ("xray", "clinical")},
@@ -685,7 +726,8 @@ class Api:
                     cr = c["result"]
                     report["clinical"] = {
                         "time": cr["time"],
-                        "weights": f"{WEIGHTS_PATH.name} v{cr['table_version']}",
+                        "weights": cr.get("weights_label") or f"{WEIGHTS_PATH.name} v{cr['table_version']}",
+                        "weight_overrides": self._clinical_model.overrides,
                         "used_xray": cr["used_xray"],
                         "inputs": cr["values"],
                         "alerts": cr["alerts"],

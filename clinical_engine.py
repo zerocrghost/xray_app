@@ -15,6 +15,7 @@ Scoring (see weight.json "method"):
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -32,18 +33,90 @@ def _ramp(x: float, frm: float, full: float) -> float:
 
 
 class ClinicalModel:
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, overrides: dict | None = None):
+        """`overrides` = the user's weight edits from the app settings, {disease: {feature: {"group", "weight"}}}.
+        They are applied on top of weight.json (the file itself is never changed) and checked like the file."""
         self.path = Path(path)
         self.table = json.loads(self.path.read_text(encoding="utf-8"))
         self.features: dict = self.table["features"]
         self.diseases: dict = self.table["diseases"]
+        # group and weight of every item as weight.json defines them (for the editor and for "reset")
+        self.defaults = {dk: {fid: {"group": it.get("group"), "weight": it.get("weight")} for fid, it in d["items"].items()}
+                         for dk, d in self.diseases.items()}
         m = self.table["method"]
         self.prior = float(m["prior"])
         self.k = float(m["prior_strength_K"])
         self.low_coverage = float(m["low_coverage"])
         self.absence = {g: float(v.get("absence_factor", 1.0)) for g, v in m["groups"].items()}
         self.presence = {g: float(v.get("presence_factor", 1.0)) for g, v in m["groups"].items()}
+        self.ignored_overrides: list[str] = []      # edits for diseases / inputs weight.json no longer has
+        self.overrides = self._apply_overrides(overrides or {})
         self.validate()
+
+    # ------------------------------------------------------------------ user weight edits
+    def _apply_overrides(self, overrides: dict) -> dict:
+        """Apply the user's group / weight edits to self.diseases. Returns the cleaned edits: only the items that
+        differ from weight.json. Raises ValueError for an edit that cannot be used (unknown group, not a number)."""
+        if not isinstance(overrides, dict):
+            raise ValueError("Weight edits must be an object {disease: {input: {group, weight}}}.")
+        groups = self.table["method"]["groups"]
+        clean, errors = {}, []
+        for dk, items in overrides.items():
+            if dk not in self.diseases:
+                self.ignored_overrides.append(str(dk))
+                continue
+            d = self.diseases[dk]
+            for fid, ov in (items or {}).items():
+                if fid not in d["items"]:
+                    self.ignored_overrides.append(f"{dk}.{fid}")
+                    continue
+                label = f"{d['name']} · {self.features[fid]['label']}"
+                base = self.defaults[dk][fid]
+                ov = ov if isinstance(ov, dict) else {"weight": ov}
+                g = ov.get("group", base["group"])
+                if g not in groups:
+                    errors.append(f"{label}: group must be one of {', '.join(groups)}, got {g!r}")
+                    continue
+                if g == "D":
+                    w = 0.0                                  # group D = not related: always weight 0
+                else:
+                    try:
+                        w = round(float(ov.get("weight", base["weight"])), 2)
+                    except (TypeError, ValueError):
+                        errors.append(f"{label}: weight must be a number, got {ov.get('weight')!r}")
+                        continue
+                    lo, hi = groups[g]["range"]
+                    if not lo <= w <= hi:
+                        if "weight" in ov:
+                            errors.append(f"{label}: weight {w:g} is outside group {g}'s range {lo}–{hi}")
+                            continue
+                        w = min(hi, max(lo, w))              # only the group changed: move the weight into its range
+                    f, it = self.features[fid], d["items"][fid]
+                    if base["group"] == "D" and f["input"] == "sounds" and not it.get("sounds"):
+                        errors.append(f"{label}: cannot leave group D, weight.json defines no expected "
+                                      f"{f['label'].lower()} for {d['name']}")
+                        continue
+                if g == base["group"] and w == float(base["weight"]):
+                    continue                                 # same as weight.json: not an edit
+                d["items"][fid] = {**d["items"][fid], "group": g, "weight": w}
+                clean.setdefault(dk, {})[fid] = {"group": g, "weight": w}
+        if errors:
+            raise ValueError("Weight edits are invalid:\n  " + "\n  ".join(errors))
+        return clean
+
+    @property
+    def edit_count(self) -> int:
+        return sum(len(v) for v in self.overrides.values())
+
+    def label(self) -> str:
+        """Which weights scored a case, e.g. 'weight.json v1.6' or 'weight.json v1.6 + 3 local edits #1a2b3c4d'.
+        The hash identifies the exact edits, so two reports with the same label used the same weights."""
+        base = f"{self.path.name} v{self.table.get('version')}"
+        if not self.overrides:
+            return base
+        n = self.edit_count
+        digest = hashlib.sha256(json.dumps(self.overrides, sort_keys=True).encode()).hexdigest()[:8]
+        return f"{base} + {n} local edit{'s' if n != 1 else ''} #{digest}"
 
     # ------------------------------------------------------------------ table checks
     def validate(self):
@@ -105,7 +178,8 @@ class ClinicalModel:
                 if not sg["moderate"] + sg["severe"]:
                     errors.append(f"{dk}.severity.{sg['label']}: no thresholds")
         if errors:
-            raise ValueError(f"{self.path.name} is invalid:\n  " + "\n  ".join(errors))
+            what = f"{self.path.name} with your weight edits" if self.overrides else self.path.name
+            raise ValueError(f"{what} is invalid:\n  " + "\n  ".join(errors))
 
     # ------------------------------------------------------------------ inputs
     def normalize(self, inputs: dict) -> dict:
@@ -291,6 +365,7 @@ class ClinicalModel:
             "entered": entered,
             "used_xray": bool(xray),
             "table_version": self.table.get("version"),
+            "weights_label": self.label(),
         }
 
     # ------------------------------------------------------------------ severity
@@ -417,6 +492,9 @@ class ClinicalModel:
         """The parts of weight.json the page needs to build the form and the weight table."""
         return {
             "version": self.table.get("version"),
+            "label": self.label(),
+            "defaults": self.defaults,                  # weight.json's own group / weight of every item
+            "overrides": self.overrides,                # the user's edits that are in effect
             "categories": self.table["categories"],
             "groups": self.table["method"]["groups"],
             "features": self.features,

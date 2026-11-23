@@ -113,6 +113,12 @@ every problem.
 * **Independent scores:** the 7 scores are independent, because diseases can coexist, so they don't add up to 100 %.
 * **Coverage:** shows how much of a disease's weighted data was entered. Below 35 % the result is marked *low confidence*.
 * **In the app:** the **Weights** button on step 2 shows the full table for each disease, plus a Method tab.
+* **Editing the weights in the app:** click **Edit weights** in the weighting table, or **Settings → Clinical weighting → Edit weights…**.
+  * For each disease you can change the group (A–D) and the weight of any item. The weight must stay inside its group's range, and group D always has weight 0.
+  * **Save weights** (Ctrl+S) checks the edits like `weight.json`, stores them in `settings.json` (`weight_overrides`, only the items that differ) and re-scores the current case. `weight.json` itself is never changed.
+  * **Reset this disease** and **Reset all to weight.json** undo the edits.
+  * Reports and saved cases name the weights they used, e.g. *weight.json v1.6 + 3 local edits #1a2b3c4d*. The case record also stores the exact edits.
+  * If the stored edits no longer fit an updated `weight.json`, the app starts with the plain table and shows a warning.
 
 **Spirometry: include it as optional.** FEV1/FVC is the deciding test for COPD (< 0.70 is
 required by GOLD) and documents the airflow limitation of asthma, so it is group A for both.
@@ -230,13 +236,16 @@ Output: `dist\standalone\PneumoLensAI\` (ship the whole folder, or the zip).
 
 ## Files
 
+For "where do I change X" (titles, buttons, fields, report, settings), see
+[docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md).
+
 | File | What it does |
 |---|---|
 | `app.py` | Creates the window and holds the `Api` class. Every public method can be called from JavaScript, and each call runs on its own thread, so the UI never freezes. |
 | `xray_engine.py` | Reads PNG/JPG/TIFF/DICOM, preprocesses exactly like the server, runs ONNX, and has the band thresholds. |
 | `clinical_engine.py` | Step 2: loads and validates `models/weight.json` and computes the 7 match scores, factors and alerts. |
 | `models/weight.json` | The A/B/C/D weighting table with the theory for every entry (see above). |
-| `ui/` | The page from the design. `app.js` holds step 1 (buttons, viewer, results), `clinical.js` step 2 (form, results, weighting table), `report.js` + `report.css` step 3 (report preview, sign-off, save, print). |
+| `ui/` | The page from the design. `app.js` holds step 1 (buttons, viewer, results), `clinical.js` step 2 (form, results, weighting table), `patient.js` the patient page and case actions, `report.js` + `report.css` the final report (preview, sign-off, save PDF/DOCX). |
 | `models/` | The fp32 ONNX model (29 MB), the most exact version. A PC doesn't need fp16. |
 | `tests/test_engine.py` | Checks the app's scores against the PyTorch/server pipeline (tolerance 1e-4). |
 | `tests/test_clinical.py` | Checks that weight.json is complete and valid, that a textbook case of each disease ranks first, and the edge cases. |
@@ -259,14 +268,13 @@ Output: `dist\standalone\PneumoLensAI\` (ship the whole folder, or the zip).
 * **Shortcuts:**
   * Ctrl+O upload (step 2: import lab file)
   * Ctrl+R analyze (step 2: run AI analysis)
-  * Ctrl+S export (step 3: save report)
-  * Ctrl+P print the report (step 3)
+  * Ctrl+S export (final report: save report)
   * Enter in a step-2 field: next field
   * `+` / `−` / `0` zoom
   * `I` invert
   * Ctrl+T dark / light theme
   * mouse wheel zooms, drag pans, double-click fits the image
-* **Not built yet:** a heatmap, Settings, sending to an EHR / DICOM SR,
+* **Not built yet:** a heatmap, sending to an EHR / DICOM SR,
   drag-and-drop of files, and compressed DICOM. JPEG-compressed DICOM needs
   `pip install pylibjpeg pylibjpeg-libjpeg pylibjpeg-openjpeg`.
 

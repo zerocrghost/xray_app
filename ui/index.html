@@ -385,6 +385,10 @@
     <div class="s-sec">Report</div>
     <div class="s-row"><label for="setHospital">Default hospital / facility</label>
       <input id="setHospital" class="s-text" maxlength="120" spellcheck="false" autocomplete="off" placeholder="filled in for every new patient"></div>
+    <div class="s-sec">Clinical weighting · step 2</div>
+    <p class="s-help">Each disease places every input in group A / B / C / D with a weight (models/weight.json). You can change the group and weight of any item. Your edits are saved for this Windows user and used for every analysis from then on. Reports and saved cases name the weights they used.</p>
+    <div class="s-row"><label>Weights in use</label>
+      <span class="s-weights" id="setWeights"></span><button class="btn sm" id="setEditWeights">Edit weights…</button></div>
     <div class="m-actions">
       <button class="btn" id="setReset" title="Reset the candidate rule (the dataset folder is not changed)">Defaults</button><div class="spacer"></div>
       <button class="btn" id="setCancel">Cancel<span class="kbd">Esc</span></button>
@@ -399,10 +403,19 @@
     <div class="w-head">
       <div><h3 id="wTitle">Weighting table</h3><p id="wSub"></p></div>
       <div class="spacer"></div>
+      <button class="btn sm" id="wEdit" title="Change the group and weight of the items (saved in settings.json)">Edit weights</button>
       <button class="icon-btn" id="wClose" title="Close (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="seg w-tabs" id="wTabs"></div>
     <div class="w-body" id="wBody"></div>
+    <div class="w-foot" id="wFoot" hidden>
+      <button class="btn sm" id="wResetDisease" title="Set every item of this disease back to weight.json">Reset this disease</button>
+      <button class="btn sm" id="wResetAll" title="Set every item of every disease back to weight.json">Reset all to weight.json</button>
+      <span class="w-state" id="wState"></span>
+      <div class="spacer"></div>
+      <button class="btn" id="wCancel">Cancel</button>
+      <button class="btn primary" id="wSave">Save weights<span class="kbd">Ctrl+S</span></button>
+    </div>
   </div>
 </div>
 <!-- what Print / PDF export prints: a copy of the report preview (see report.css @media print) -->

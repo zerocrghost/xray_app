@@ -258,6 +258,40 @@ def main():
           f"{cp['grade']}, {cp['points']} points")
     check("every disease has guideline severity signs", all(d.get("severity", {}).get("signs") for d in m.diseases.values()))
 
+    # user weight edits (app settings): applied on top of weight.json, checked like the file, file itself unchanged
+    file_text = WEIGHTS.read_text(encoding="utf-8")
+    check("no edits: label is the plain table version", m.label() == f"weight.json v{m.table['version']}" and m.overrides == {})
+    case = CASES["pneumonia"][0]
+    base_pn = next(d for d in m.score(case, None)["diseases"] if d["id"] == "pneumonia")["match"]
+    fever = m.diseases["pneumonia"]["items"]["fever"]
+    e = ce.ClinicalModel(WEIGHTS, {"pneumonia": {"fever": {"group": "D"}},
+                                   "asthma": {"cough": {"group": m.diseases["asthma"]["items"]["cough"]["group"],
+                                                        "weight": m.diseases["asthma"]["items"]["cough"]["weight"]}},
+                                   "no_such_disease": {"fever": {"weight": 1}}})
+    edited_pn = next(d for d in e.score(case, None)["diseases"] if d["id"] == "pneumonia")
+    check("an edit changes the item and the score", e.diseases["pneumonia"]["items"]["fever"]["weight"] == 0 and
+          edited_pn["match"] != base_pn and all(f["id"] != "fever" for f in edited_pn["factors"]),
+          f"pneumonia {base_pn:.3f} → {edited_pn['match']:.3f} without fever ({fever['group']} {fever['weight']})")
+    check("an edit equal to weight.json is dropped, unknown diseases are ignored",
+          e.overrides == {"pneumonia": {"fever": {"group": "D", "weight": 0.0}}} and e.ignored_overrides == ["no_such_disease"])
+    check("edited label names the edits and a hash", e.label().startswith(f"weight.json v{m.table['version']} + 1 local edit #")
+          and e.score(case, None)["weights_label"] == e.label() and e.for_ui()["overrides"] == e.overrides)
+    check("the defaults stay weight.json's values", e.defaults["pneumonia"]["fever"] == {"group": fever["group"], "weight": fever["weight"]})
+    lo, hi = m.table["method"]["groups"]["C"]["range"]
+    moved = ce.ClinicalModel(WEIGHTS, {"asthma": {"wheezing": {"group": "C"}}})       # A 3.5 → C, no weight given
+    check("changing only the group moves the weight into the new range",
+          lo <= moved.diseases["asthma"]["items"]["wheezing"]["weight"] <= hi, moved.diseases["asthma"]["items"]["wheezing"])
+    for name, bad in [("weight outside the group's range", {"asthma": {"wheezing": {"weight": 9}}}),
+                      ("unknown group", {"asthma": {"wheezing": {"group": "X"}}}),
+                      ("weight that is not a number", {"asthma": {"wheezing": {"weight": "lots"}}}),
+                      ("sounds item leaving D without expected sounds", {"lung_abscess": {"exposure": {"group": "A", "weight": 3}}})]:
+        try:
+            ce.ClinicalModel(WEIGHTS, bad)
+            check(f"rejected: {name}", False)
+        except ValueError as ex:
+            check(f"rejected: {name}", True, str(ex).splitlines()[-1].strip())
+    check("weight.json itself is never changed by edits", WEIGHTS.read_text(encoding="utf-8") == file_text)
+
     ok = all(results)
     print(f"\n{sum(results)}/{len(results)} checks passed")
     print("RESULT:", "PASS" if ok else "FAIL")
